@@ -1,0 +1,88 @@
+{
+  "task": "nimbusr" //  
+  , "model": "multiblur" 
+  , "gpu_ids": [0,1,2,3,4,5,6]
+  , "n_channels": 3 // 1 for grayscale image restoration, 3 for color image restoration
+  , "merge_bn": false
+  , "merge_bn_startpoint": 300000
+
+  , "datasets": {
+    "train": {
+      "name": "train_dataset"
+      , "dataset_type": "nimbusr"
+      , "dataroot_H": "datasets/COCO/train2014"
+      , "dataroot_L": null
+      , "H_size": 256 // 128 | 192
+      , "use_flip": true
+      , "use_rot": true
+      , "scales": [1, 2, 3, 4]
+      , "sigma": [0, 25]
+      , "dataloader_shuffle": true
+      , "dataloader_num_workers": 64
+      , "dataloader_batch_size": 16
+      
+      , "coco_annotation_path": "datasets/COCO/instances_train2014.json"
+    }
+    , "test": {
+      "name": "test_dataset"
+      , "dataset_type": "nimbusr"
+      , "dataroot_H": "datasets/COCO/val014"
+      , "dataroot_L": null
+      , "H_size": 256  // 128 | 192
+      , "use_flip": true
+      , "use_rot": true
+      , "sigma": [0, 1]
+      , "scales": [1, 2, 3, 4]
+      , "dataloader_shuffle": true
+      , "dataloader_num_workers": 16
+      , "dataloader_batch_size": 16
+      
+      , "coco_annotation_path": "datasets/COCO/instances_val2014.json"
+    }
+  }
+
+  , "path": {
+    "root": "SR"
+    , "pretrained_netG": "model_zoo/resunet_big_full.pth"
+  }
+
+  , "netG": {
+    "net_type": "nimbusr"
+    , "n_iter": 8 
+    , "h_nc": 64
+    , "in_nc": 4
+    , "out_nc": 3
+    , "nc": [64, 128, 256, 512]
+    , "nb": 2
+    , "act_mode": "R" // "BR" for BN+ReLU | "R" for ReLU
+    , "upsample_mode": "convtranspose" // "pixelshuffle" | "convtranspose" | "upconv"
+    , "downsample_mode": "strideconv" // "strideconv" | "avgpool" | "maxpool"
+
+    , "init_type": "orthogonal" // "orthogonal" | "normal" | "uniform" | "xavier_normal" | "xavier_uniform" | "kaiming_normal" | "kaiming_uniform"
+    , "init_bn_type": "uniform" // "uniform" | "constant"
+    , "init_gain": 0.2
+  }
+
+  , "train": {
+    "G_lossfn_type": "l1" // "l1" | "l2sum" | "l2" | "ssim"
+    , "G_lossfn_weight": 1.0
+
+    , "G_optimizer_type": "adam"
+    , "G_optimizer_lr": 1e-4
+    , "G_optimizer_wd": 0
+    , "G_optimizer_clipgrad": null
+
+    , "G_scheduler_type": "MultiStepLR"
+    , "G_scheduler_milestones": [2000, 8000, 12000, 16000, 20000]
+    , "G_scheduler_gamma": 0.5
+
+    , "G_regularizer_orthstep": null
+    , "G_regularizer_clipstep": null
+
+    , "checkpoint_test": 500
+    , "checkpoint_save": 500
+    , "checkpoint_print": 50
+    , "n_epochs": 200
+    , "current_step": 0
+  }
+}
