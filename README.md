@@ -14,7 +14,7 @@ python main_train.py -opt options/train_nimbusr.json
 
 Pre-trained model is available at: *model_zoo/NIMBUSR.pth*
 
-See *test.ipynb* to test the model on COCO dataset.
+See *test_model.ipynb* to test the model on COCO dataset.
 
 # Results
 
