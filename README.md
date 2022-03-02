@@ -32,8 +32,8 @@ LR | SwinIR           |  BlindSR | USRNet | Ours | HR
 
 LR | SwinIR           |  BlindSR | USRNet | Ours  
 :-:|:------------------:|:-------:|:---:|:------:
-<img src="images/Generalization/1_LR.png" alt="" width="100"/>  |  <img src="images/Generalization/1_SwinIR.png" alt="" width="100"/> | <img src="images/Generalization/1_blindsr.png" alt="" width="100"/>  | <img src="images/Generalization/1_usrnet.png" alt="" width="100"/>  | <img src="images/Generalization/1_nimbusr.png" alt="" width="100"/>  
-<img src="images/Generalization/1_small_LR.png" alt="" width="100"/>  |  <img src="images/Generalization/1_small_SwinIR.png" alt="" width="100"/> | <img src="images/Generalization/1_small_blindsr.png" alt="" width="100"/>  | <img src="images/Generalization/1_small_usrnet.png" alt="" width="100"/>  | <img src="images/Generalization/1_small_nimbusr.png" alt="" width="100"/>  
+<img src="images/Generalization/1_LR.png" alt="" width="100"/>  |  <img src="images/Generalization/1_swinir.png" alt="" width="100"/> | <img src="images/Generalization/1_blindsr.png" alt="" width="100"/>  | <img src="images/Generalization/1_usrnet.png" alt="" width="100"/>  | <img src="images/Generalization/1_nimbusr.png" alt="" width="100"/>  
+<img src="images/Generalization/1_small_LR.png" alt="" width="100"/>  |  <img src="images/Generalization/1_small_swinir.png" alt="" width="100"/> | <img src="images/Generalization/1_small_blindsr.png" alt="" width="100"/>  | <img src="images/Generalization/1_small_usrnet.png" alt="" width="100"/>  | <img src="images/Generalization/1_small_nimbusr.png" alt="" width="100"/>  
 
 
 # Acknowledgement
