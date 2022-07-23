@@ -156,7 +156,33 @@ class COCONonUniformBlurDataset(Dataset):
                 #plt.figure()
                 #plt.imshow(128 * mask_k, cmap='gray')
                 #plt.show()
+<<<<<<< HEAD
 
+=======
+        # else:
+            #     # mask
+            #     # t = img[ann['image_id']]
+            #     print(anns[ind]['segmentation'])
+            #     if type(anns[ind]['segmentation']['counts']) == list:
+            #         rle = maskUtils.frPyObjects([anns[ind]['segmentation']], H, W)
+            #     else:
+            #         rle = [anns[ind]['segmentation']]
+            #     m = maskUtils.decode(rle)
+            #     # m_img = np.ones( (m.shape[0], m.shape[1], 3) )
+            #     # if ann['iscrowd'] == 1:
+            #     #    color_mask = np.array([2.0,166.0,101.0])/255
+            #     # if ann['iscrowd'] == 0:
+            #     #    color_mask = np.random.random((1, 3)).tolist()[0]
+            #     # for i in range(3):
+            #     #    m_img[:,:,i] = color_mask[i]
+            #
+            #     if anns[ind]['iscrowd'] == 1:
+            #         print('is crowd')
+            #     plt.figure()
+            #     # plt.imshow(np.dstack( (m_img, m*0.5)), cmap='gray')
+            #     plt.imshow(128 * m, cmap='gray')
+            #     plt.show()
+>>>>>>> 28c6287c4b852cc711a49e8f259d6a1d931b164c
 
         if len(obj_masks) > 2:
             print('Ojo')
@@ -226,6 +252,66 @@ class COCONonUniformBlurDataset(Dataset):
             num_channels = len(sharp_image.shape)
             idx = np.random.randint(len(self.images_of_interest))
 
+<<<<<<< HEAD
+=======
+        #kernels.append(kernel)  # kernel associated with the background
+
+        # seg_filename = image_fullname.replace('.jpg', '_seg.png')
+        # seg_img = np.array(Image.open(seg_filename))
+        #
+        # B = np.array(seg_img)[:, :, 2]
+        # values_of_segmented_instances = np.unique(B)
+        #
+        # #print('Number of segmented instance in the image: ', len(values_of_segmented_instances))
+        #
+        # # Read attributes
+        # # format: '%03d; %s;  %d; %s; "%s"\n', instance, name, whole(j)==0, crop, atr
+        # # format: Instance, part level (0 for objects), crop, class name, corrected_raw_name, list-of-attributes
+        # with open(image_fullname.replace('.jpg', '_atr.txt'), 'r') as f:
+        #     text = f.readlines()
+        # corrected_raw_names, part_level = [], []
+        # for line in text:
+        #     data = line.split(' # ')
+        #     is_part = int(data[1]) > 0
+        #     if not is_part:
+        #         corrected_raw_names.append(data[4])
+        #
+        # #print('Number of labels for instances in the image: ', len(corrected_raw_names))
+        #
+        # W = sharp_image.shape[1]
+        # H = sharp_image.shape[0]
+        #
+        # if self.seed is not None:
+        #     np.random.seed(self.seed)
+        # #print(image_name, W, H)
+        #
+        # only_background = True
+        # num_attempt = 0
+        # max_attempts = 100 if self.max_objects_to_blur > 0  else 1
+        #
+        # while(only_background and num_attempt < max_attempts ):
+        #     try:
+        #         Ws = np.random.randint(0, W - self.crop_size -K + 1)
+        #         Hs = np.random.randint(0, H - self.crop_size -K + 1)
+        #         sharp_image_crop = sharp_image[Hs:Hs + self.crop_size + K - 1, Ws:Ws + self.crop_size + K  - 1, :]
+        #         B_crop = B[ Hs + K//2:Hs + K//2 + self.crop_size, Ws + K//2:Ws + K//2 + self.crop_size]
+        #     except:
+        #         print('Error while cropping: W=%d, H=%d, crop_size=%d' % (W, H, self.crop_size))
+        #     values_of_segmented_instances_in_crop = np.unique(B_crop)
+        #     # check that at least one of the objetcs is an object of interest
+        #     for val in values_of_segmented_instances_in_crop:
+        #         # the name of the label is found
+        #         index = np.argwhere(values_of_segmented_instances==val)[0][0]
+        #         instance_label = corrected_raw_names[index - 1]
+        #         if instance_label in self.labels_to_saturate or instance_label in self.labels_to_blur and index > 0:  # primer elemento no tiene etiqueta
+        #             only_background = False
+        #     num_attempt +=1
+        #
+        # #if num_attempt==max_attempts and self.max_objects_to_blur>0 :
+        # #    print('Maximum number of attempts reached, no good image found :-(')
+        #
+
+>>>>>>> 28c6287c4b852cc711a49e8f259d6a1d931b164c
         # An interesting crop is chosen
         K = self.kernel_size
 
@@ -257,8 +343,13 @@ class COCONonUniformBlurDataset(Dataset):
                 masks_to_send[:,:,i] = mask
                 kernels_to_send[:,:,i] = kernel
                 
+<<<<<<< HEAD
                 #if len(masks)>2:
                 #     imsave(f'kernel_{idx}_{i}.png', (kernel-kernel.min())/(kernel.max()-kernel.min()))
+=======
+                if len(masks)>2:
+                     imsave(f'kernel_{idx}_{i}.png', (kernel-kernel.min())/(kernel.max()-kernel.min()))
+>>>>>>> 28c6287c4b852cc711a49e8f259d6a1d931b164c
                 #plt.imshow(kernel)
                 #plt.show()
                 #plt.imshow(mask)
@@ -275,10 +366,17 @@ class COCONonUniformBlurDataset(Dataset):
 
         blurry_image, sharp_image_crop = self.generate_blurry_sharp_pair(sharp_image_crop, kernels, masks_to_send)
 
+<<<<<<< HEAD
         #if len(masks) > 2:
         #    imsave(f'masks_{idx}.png', masks_to_send)
         #    imsave(f'blurry_{idx}.png', blurry_image)
         #    imsave(f'sharp_{idx}.png', sharp_image_crop[K // 2:-(K // 2), K // 2:-(K // 2)])
+=======
+        if len(masks) > 2:
+            imsave(f'masks_{idx}.png', masks_to_send)
+            imsave(f'blurry_{idx}.png', blurry_image)
+            imsave(f'sharp_{idx}.png', sharp_image_crop[K // 2:-(K // 2), K // 2:-(K // 2)])
+>>>>>>> 28c6287c4b852cc711a49e8f259d6a1d931b164c
         #plt.imshow(blurry_image/255)
         #plt.show()
         masks_to_send = self.transform(masks_to_send)
