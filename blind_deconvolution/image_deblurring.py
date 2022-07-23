@@ -19,7 +19,7 @@ from utils.restoration import RL_restore, combined_RL_restore
 
 
 def load_nimbusr_net():
-
+    
     opt_net = { "n_iter": 8
         , "h_nc": 64
         , "in_nc": 4
