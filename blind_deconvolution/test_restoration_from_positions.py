@@ -7,6 +7,14 @@ from utils.RL_restoration_from_positions import RL_restore_from_positions, combi
 from models.network_nimbusr_pmpb import NIMBUSR_PMPB as net
 from utils.visualization import save_image, tensor2im
 import os 
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--blurry_image', '-b', type=str, help='blurry image', default='/home/guillermo/github/camera_shake/data/COCO_homographies_small_gf1/blurry/000000000009_0.jpg')
+parser.add_argument('--positions', '-p', type=str, help='positions', default='/home/guillermo/github/camera_shake/data/COCO_homographies_small_gf1/positions/000000000009_0.txt')
+parser.add_argument('--rescale_factor','-rf', type=float, default=1)
+
+args = parser.parse_args()
 
 def load_nimbusr_net():
     
@@ -61,9 +69,9 @@ def load_nimbusr_net():
     return netG
 
 
-blurry_image_filename = '/home/guillermo/github/camera_shake/data/COCO_homographies_small_gf1/blurry/000000000009_0.jpg'
-positions_filename = '/home/guillermo/github/camera_shake/data/COCO_homographies_small_gf1/positions/000000000009_0.txt'
-sharp_image_filename = '/home/guillermo/github/camera_shake/data/COCO_homographies_small_gf1//sharp/000000000009_0.jpg'
+blurry_image_filename = args.blurry_image #'/home/guillermo/github/camera_shake/data/COCO_homographies_small_gf1/blurry/000000000009_0.jpg' 
+positions_filename = args.positions #'/home/guillermo/github/camera_shake/data/COCO_homographies_small_gf1/positions/000000000009_0.txt'
+#sharp_image_filename = '/home/guillermo/github/camera_shake/data/COCO_homographies_small_gf1//sharp/000000000009_0.jpg'
 n_iters = 20
 GPU = 0
 n_positions = 25
@@ -73,10 +81,10 @@ output_folder='restoration_from_homographies'
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
 
-blurry_image = rescale(imread(blurry_image_filename)/255.0, (0.6,0.6,1),anti_aliasing=True)
-sharp_image = rescale(imread(sharp_image_filename)/255.0,(0.6,0.6,1),anti_aliasing=True)
+blurry_image = rescale(imread(blurry_image_filename)/255.0, (args.rescale_factor,args.rescale_factor,1),anti_aliasing=True)
+#sharp_image = rescale(imread(sharp_image_filename)/255.0,(0.6,0.6,1),anti_aliasing=True)
 blurry_tensor = torch.from_numpy(blurry_image).permute(2,0,1)[None].cuda(GPU).float()
-sharp_tensor = torch.from_numpy(sharp_image).permute(2,0,1)[None].cuda(GPU).float()
+#sharp_tensor = torch.from_numpy(sharp_image).permute(2,0,1)[None].cuda(GPU).float()
 initial_tensor = blurry_tensor.clone()
 
 camera_positions_np = np.loadtxt(positions_filename, delimiter=',')

@@ -44,27 +44,16 @@ parser.add_argument('-m' ,'--model_name', help='model name', default='non_unifor
 parser.add_argument('-k' ,'--n_kernels', type=int, help='number of kernels to estimate', default=25)
 parser.add_argument('-ks', '--kernel_size', type=int, help='blur kernel size', default=33)
 parser.add_argument('-ket', '--kernel_exposure_time', type=str, help='blur kernel exposure time', default='1')
-<<<<<<< HEAD
-parser.add_argument('-l', '--loss', help='optimization loss, [mse, kernel+mse, ]', default='kernel+mse')
-parser.add_argument('-klf', '--kernel_loss_factor', type=float, help='kernel loss factor', default=1.0)
-parser.add_argument('-klt', '--kernel_loss_type', type=str, help='kernel loss type', default='L2')
-parser.add_argument('-rlf', '--reblur_loss_factor', type=float, help='reblur loss factor', default=1.0)
-parser.add_argument('-a','--architecture', type=str, help='architecture to use, [NoFC]', default='NoFC')
-=======
 parser.add_argument('-l', '--loss', help='optimization loss, [mse, kld, kernel, kernel+mse, kernel+px_space, kernel+px_space, kernel+mse+grad, kernel+grad, kernel+mse+reblur, kernel+grad+reblur, kernel+mse+grad+reblur]', default='kernel+mse')
 parser.add_argument('-klf', '--kernel_loss_factor', type=float, help='kernel loss factor', default=1.0)
 parser.add_argument('-klt', '--kernel_loss_type', type=str, help='kernel loss type', default='L2')
 parser.add_argument('-rlf', '--reblur_loss_factor', type=float, help='reblur loss factor', default=1.0)
 parser.add_argument('-a','--architecture', type=str, help='architecture to use, [base_model, Xia, simplified, TwoSteps]', default='Xia')
->>>>>>> 28c6287c4b852cc711a49e8f259d6a1d931b164c
 parser.add_argument('-krlf', '--kernels_regularization_loss_factor', type=float, help='kernel regularization loss factor', default=0.0)
 parser.add_argument('-krt', '--kernels_regularization_type', type=str, help='kernel regularization type [none, L1, L2, TV, Lp]', default='none')
 parser.add_argument('-mrlf', '--masks_regularization_loss_factor', type=float, help='masks regularization loss factor', default=0.0)
 parser.add_argument('-mrt', '--masks_regularization_type', type=str, help='masks regularization type [none, L2, TV]', default='none')
-<<<<<<< HEAD
-=======
 parser.add_argument('-sf', '--subsampling_factor', type=int, help='subsampling factor', default=1)
->>>>>>> 28c6287c4b852cc711a49e8f259d6a1d931b164c
 parser.add_argument('--augment_illumination', default=False, action='store_true', help='whether to augment illumination')
 parser.add_argument('--gamma_correction', default=False, action='store_true', help='whether to perform gamma_correction')
 parser.add_argument('--gamma_factor', type=float, default=2.2, help='gamma correction factor')
