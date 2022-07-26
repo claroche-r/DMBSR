@@ -35,8 +35,6 @@ LR | SwinIR           |  BlindSR | USRNet | Ours
 <img src="images/Generalization/1_LR.png" alt="" width="100"/>  |  <img src="images/Generalization/1_swinir.png" alt="" width="100"/> | <img src="images/Generalization/1_blindsr.png" alt="" width="100"/>  | <img src="images/Generalization/1_usrnet.png" alt="" width="100"/>  | <img src="images/Generalization/1_nimbusr.png" alt="" width="100"/>  
 <img src="images/Generalization/1_small_LR.png" alt="" width="100"/>  |  <img src="images/Generalization/1_small_swinir.png" alt="" width="100"/> | <img src="images/Generalization/1_small_blindsr.png" alt="" width="100"/>  | <img src="images/Generalization/1_small_usrnet.png" alt="" width="100"/>  | <img src="images/Generalization/1_small_nimbusr.png" alt="" width="100"/>  
 
-<<<<<<< HEAD
-=======
 # Real-world images 
 
 For this section, we used the code provided by https://github.com/GuillermoCarbajal/NonUniformBlurKernelEstimation to estimate the kernel and we combine their kernel estimation to our super-resolution model. We also use the dataset provided by "Laurent D’Andrès, Jordi Salvador, Axel Kochale, and Sabine Süsstrunk. Non-parametric blur map regression for depth of field extension".
@@ -56,10 +54,6 @@ LR | DMPHN           |  RealBlur | MPRNet | Ours
 <img src="images/realworld/coke.jpg" alt="" width="100"/>  | <img src="images/realworld/DMPHNcoke.jpg" alt="" width="100"/> | <img src="images/realworld/RealBlur_coke.jpg" alt="" width="100"/> | <img src="images/realworld/MPRNet_coke.jpg" alt="" width="100"/> | <img src="images/realworld/ours_coke.jpg" alt="" width="100"/>
 <img src="images/realworld/butchershop.jpg" alt="" width="100"/> | <img src="images/realworld/DMPHNbutchershop.jpg" alt="" width="100"/> | <img src="images/realworld/RealBlur_butchershop.jpg" alt="" width="100"/> | <img src="images/realworld/MPRNet_butchershop.jpg" alt="" width="100"/> | <img src="images/realworld/ours_butchershop.jpg" alt="" width="100"/>
 
-
-
-
->>>>>>> 28c6287c4b852cc711a49e8f259d6a1d931b164c
 
 # Acknowledgement
 The codes use [KAIR](https://github.com/cszn/KAIR) as base. Please also follow their licenses. I would like to thank them for the amazing repository.
