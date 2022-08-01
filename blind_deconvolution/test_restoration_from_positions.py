@@ -99,7 +99,8 @@ intrinsics = compute_intrinsics(W, H).cuda(GPU)[None]
 
 
 if restoration_method=='RL':
-    output = RL_restore_from_positions(blurry_tensor, initial_tensor, camera_positions, n_iters, GPU, isDebug=True, reg_factor=1e-3)
+    output = RL_restore_from_positions(blurry_tensor, initial_tensor, camera_positions, 
+                                       n_iters, GPU, isDebug=True, reg_factor=0)
     #combined_RL_restore_from_positions(blurry_tensor, initial_tensor, camera_positions, n_iters, GPU, isDebug=True)
 else: 
     netG = load_nimbusr_net()

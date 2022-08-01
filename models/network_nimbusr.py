@@ -118,7 +118,6 @@ def o_leary(x, kmap, basis):
         c += hadamard(convolve_tensor(x, basis[i]), kmap[i])
     return c
 
-<<<<<<< HEAD
 def pmpb(x, positions, intrinsics):
     # Apply PMPB model blurry = sum(K_i P_i K^{-1} x)
     # x: input of shape (C,H,W)
@@ -131,8 +130,6 @@ def pmpb(x, positions, intrinsics):
         c += hadamard(convolve_tensor(x, basis[i]), kmap[i])
     return c
 
-=======
->>>>>>> 28c6287c4b852cc711a49e8f259d6a1d931b164c
 
 def o_leary_batch(x, kmap, basis):
     # Apply O'Leary convolution model blurry = sum(U_i H_i x)
@@ -144,7 +141,6 @@ def o_leary_batch(x, kmap, basis):
     
     return torch.cat([o_leary(x[i], kmap[i], basis[i])[None] for i in range(len(x))])
 
-<<<<<<< HEAD
 def pmpb_batch(x, positions, intrinsics):
     # Apply PMPB model blurry = sum(K_i P_i K^{-1} x)
     # x: input of shape (B,C,H,W)
@@ -155,8 +151,6 @@ def pmpb_batch(x, positions, intrinsics):
     
     return torch.cat([o_leary(x[i], positions[i], intrinsics[i])[None] for i in range(len(x))])
 
-=======
->>>>>>> 28c6287c4b852cc711a49e8f259d6a1d931b164c
 
 def transpose_o_leary(x, kmap, basis):
     # Apply the transpose of O'Leary convolution model blurry = sum(H_i^T U_i x)
@@ -170,7 +164,6 @@ def transpose_o_leary(x, kmap, basis):
         c += cross_correlate_tensor(hadamard(x, kmap[i]), basis[i])
     return c
 
-<<<<<<< HEAD
 def transpose_pmpb(x, positions, intrinsics):
     # Apply the transpose of PMPB model blurry = sum(K_i P_i K^{-1} x)
     # x: input of shape (C,H,W)
@@ -182,8 +175,7 @@ def transpose_pmpb(x, positions, intrinsics):
     for i in range(len(kmap)):
         c += cross_correlate_tensor(hadamard(x, kmap[i]), basis[i])
     return c
-=======
->>>>>>> 28c6287c4b852cc711a49e8f259d6a1d931b164c
+
 
 def transpose_o_leary_batch(x, kmap, basis):
     # Apply the transpose of O'Leary convolution model blurry = sum(H_i^T U_i x)
@@ -195,7 +187,7 @@ def transpose_o_leary_batch(x, kmap, basis):
     
     return torch.cat([transpose_o_leary(x[i], kmap[i], basis[i])[None] for i in range(len(x))])
 
-<<<<<<< HEAD
+
 def transpose_pmpb_batch(x, positions, intrinsics):
     # Apply the transpose of PMPB model model blurry = sum(H_i^T U_i x)
     # x: input of shape (B,C,H,W)
@@ -205,8 +197,7 @@ def transpose_pmpb_batch(x, positions, intrinsics):
     assert len(x) == len(kmap) and len(kmap) == len(basis), print("Batch size must be the same for all inputs")
     
     return torch.cat([transpose_o_leary(x[i], kmap[i], basis[i])[None] for i in range(len(x))])
-=======
->>>>>>> 28c6287c4b852cc711a49e8f259d6a1d931b164c
+
 
 """
 # --------------------------------------------
@@ -382,7 +373,6 @@ class NIMBUSR(nn.Module):
         x_0 = self.p(torch.cat((i_0, gamma.repeat(1, 1, i_0.size(2), i_0.size(3))), dim=1))
 
         return x_0
-<<<<<<< HEAD
 
 
 class NIMBUSR_PMPB(nn.Module):
@@ -432,5 +422,4 @@ class NIMBUSR_PMPB(nn.Module):
         x_0 = self.p(torch.cat((i_0, gamma.repeat(1, 1, i_0.size(2), i_0.size(3))), dim=1))
 
         return x_0
-=======
->>>>>>> 28c6287c4b852cc711a49e8f259d6a1d931b164c
+
