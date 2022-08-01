@@ -13,6 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--blurry_image', '-b', type=str, help='blurry image', default='/home/guillermo/github/camera_shake/data/COCO_homographies_small_gf1/blurry/000000000009_0.jpg')
 parser.add_argument('--positions', '-p', type=str, help='positions', default='/home/guillermo/github/camera_shake/data/COCO_homographies_small_gf1/positions/000000000009_0.txt')
 parser.add_argument('--rescale_factor','-rf', type=float, default=1)
+parser.add_argument('--restoration_method','-rm', type=str, default='RL')
 
 args = parser.parse_args()
 
@@ -75,7 +76,7 @@ positions_filename = args.positions #'/home/guillermo/github/camera_shake/data/C
 n_iters = 20
 GPU = 0
 n_positions = 25
-restoration_method='NIMBUSR'
+restoration_method=args.restoration_method
 output_folder='restoration_from_homographies'
 
 if not os.path.exists(output_folder):
