@@ -23,7 +23,8 @@ def define_Model(opt):
 
     elif model == 'multiblur_gan':  # four inputs: L, kmap, basis, sf, sigma
         from models.model_gan_multiblur import ModelGAN as M
-
+    elif model == 'pmpb':  # four inputs: L, kmap, basis, sf, sigma
+        from models.model_pmpb import ModelPMPB as M
     else:
         raise NotImplementedError('Model [{:s}] is not defined.'.format(model))
 

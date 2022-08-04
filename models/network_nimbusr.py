@@ -118,17 +118,6 @@ def o_leary(x, kmap, basis):
         c += hadamard(convolve_tensor(x, basis[i]), kmap[i])
     return c
 
-def pmpb(x, positions, intrinsics):
-    # Apply PMPB model blurry = sum(K_i P_i K^{-1} x)
-    # x: input of shape (C,H,W)
-    # positions: input of shape (P,H,W)
-    # intrinsics: input of shape (P,H_k,W_k)
-
-    assert len(positions) == len(intrinsics), str(len(positions)) + ',' +  str(len(intrinsics))
-    c = 0
-    for i in range(len(positions)):
-        c += hadamard(convolve_tensor(x, basis[i]), kmap[i])
-    return c
 
 
 def o_leary_batch(x, kmap, basis):
@@ -140,16 +129,6 @@ def o_leary_batch(x, kmap, basis):
     assert len(x) == len(kmap) and len(kmap) == len(basis), print("Batch size must be the same for all inputs")
     
     return torch.cat([o_leary(x[i], kmap[i], basis[i])[None] for i in range(len(x))])
-
-def pmpb_batch(x, positions, intrinsics):
-    # Apply PMPB model blurry = sum(K_i P_i K^{-1} x)
-    # x: input of shape (B,C,H,W)
-    # positions: input of shape (B,P,3)
-    # intrinsics: input of shape (B,3,3)
-
-    assert len(x) == len(positions) and len(positions) == len(intrinsics), print("Batch size must be the same for all inputs")
-    
-    return torch.cat([o_leary(x[i], positions[i], intrinsics[i])[None] for i in range(len(x))])
 
 
 def transpose_o_leary(x, kmap, basis):
@@ -187,6 +166,7 @@ def transpose_o_leary_batch(x, kmap, basis):
     
     return torch.cat([transpose_o_leary(x[i], kmap[i], basis[i])[None] for i in range(len(x))])
 
+
 def transpose_pmpb_batch(x, positions, intrinsics):
     # Apply the transpose of PMPB model model blurry = sum(H_i^T U_i x)
     # x: input of shape (B,C,H,W)
@@ -196,6 +176,7 @@ def transpose_pmpb_batch(x, positions, intrinsics):
     assert len(x) == len(kmap) and len(kmap) == len(basis), print("Batch size must be the same for all inputs")
     
     return torch.cat([transpose_o_leary(x[i], kmap[i], basis[i])[None] for i in range(len(x))])
+
 
 """
 # --------------------------------------------
@@ -368,55 +349,6 @@ class NIMBUSR(nn.Module):
         gamma = ab[:, 3*self.n+2:, ...]
 
         i_0 = x_0 - beta * transpose_o_leary_batch(h_0 - z_0 + u_0, kmap, basis)
-        x_0 = self.p(torch.cat((i_0, gamma.repeat(1, 1, i_0.size(2), i_0.size(3))), dim=1))
-
-        return x_0
-
-
-class NIMBUSR_PMPB(nn.Module):
-    def __init__(self, n_iter=8, h_nc=64, in_nc=4, out_nc=3, nc=[64, 128, 256, 512], nb=2, act_mode='R', downsample_mode='strideconv', upsample_mode='convtranspose'):
-        super(NIMBUSR_PMPB, self).__init__()
-
-        self.d = DataNet()
-        self.p = ResUNet(in_nc=in_nc, out_nc=out_nc, nc=nc, nb=nb, act_mode=act_mode, downsample_mode=downsample_mode, upsample_mode=upsample_mode)
-        self.h = HyPaNet(in_nc=2, out_nc=(n_iter+1)*3, channel=h_nc)
-        self.n = n_iter
-
-    def forward(self, y, positions, intrinsics, sf, sigma):
-        '''
-        y: tensor, NxCxHxW
-        positions: tensor, NxPx3
-        intrinsics: tensor, Nx3x3
-        sf: integer, 1
-        sigma: tensor, Nx1x1x1
-        '''
-        
-        # Initialization
-        STy = upsample(y, sf)
-        x_0 = nn.functional.interpolate(y, scale_factor=sf, mode='nearest')
-        z_0 = x_0
-        h_0 = pmpb_batch(x_0, positions, intrinsics)
-        u_0 = torch.zeros_like(z_0)
-        ab = self.h(torch.cat((sigma, torch.tensor(sf).type_as(sigma).expand_as(sigma)), dim=1))
-
-        for i in range(self.n):
-            # Hyper-params
-            alpha = ab[:, i:i+1, ...]
-            beta = ab[:, i+(self.n+1):i+(self.n+1)+1, ...]
-            gamma = ab[:, i+2*(self.n+1):i+2*(self.n+1)+1, ...]
-
-            # ADMM steps
-            i_0 = x_0 - beta * transpose_pmpb_batch(h_0 - z_0 + u_0, positions, intrinsics)
-            x_0 = self.p(torch.cat((i_0, gamma.repeat(1, 1, i_0.size(2), i_0.size(3))), dim=1))
-            h_0 = pmpb_batch(x_0, positions, intrinsics)
-            z_0 = self.d(h_0 + u_0, STy, alpha, sf, sigma)
-            u_0 = u_0 + h_0 - z_0
-
-        # Hyper-params
-        beta = ab[:, 2*self.n+1:2*(self.n+1), ...]
-        gamma = ab[:, 3*self.n+2:, ...]
-
-        i_0 = x_0 - beta * transpose_pmpb_batch(h_0 - z_0 + u_0, positions, intrinsics)
         x_0 = self.p(torch.cat((i_0, gamma.repeat(1, 1, i_0.size(2), i_0.size(3))), dim=1))
 
         return x_0
