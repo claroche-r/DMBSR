@@ -30,7 +30,18 @@ def define_G(opt):
                    downsample_mode=opt_net['downsample_mode'],
                    upsample_mode=opt_net['upsample_mode']
                    )
-
+    elif net_type == 'pmpb': 
+        from models.network_nimbusr_pmpb import NIMBUSR_PMPB as net
+        netG = net(n_iter=opt_net['n_iter'],
+                   h_nc=opt_net['h_nc'],
+                   in_nc=opt_net['in_nc'],
+                   out_nc=opt_net['out_nc'],
+                   nc=opt_net['nc'],
+                   nb=opt_net['nb'],
+                   act_mode=opt_net['act_mode'],
+                   downsample_mode=opt_net['downsample_mode'],
+                   upsample_mode=opt_net['upsample_mode']
+                   )
     else:
         raise NotImplementedError('netG [{:s}] is not found.'.format(net_type))
 

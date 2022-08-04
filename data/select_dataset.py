@@ -3,7 +3,8 @@ def define_Dataset(dataset_opt):
     
     if dataset_type in ['nimbusr']:
         from data.dataset_multiblur import Dataset as D 
-        
+    elif dataset_type in ['pmpb']:
+         from data.dataset_pmpb import Dataset as D            
     else:
         raise NotImplementedError('Dataset [{:s}] is not found.'.format(dataset_type))
 
