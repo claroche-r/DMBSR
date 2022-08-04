@@ -59,9 +59,12 @@ class Dataset(data.Dataset):
 
         img_L = util.imread_uint(L_path, self.n_channels)
         img_L = util.uint2single(img_L)
-        
+
         img_H = util.single2tensor3(img_H)
         img_L = util.single2tensor3(img_L)
+
+        img_H = util.imresize(img_H, 0.5)
+        img_L = util.imresize(img_L, 0.5)
         
         P_path = os.path.join(self.dataroot, 'positions', self.positions_files[index])
         camera_positions_np = np.loadtxt(P_path, delimiter=',')
@@ -79,9 +82,12 @@ class Dataset(data.Dataset):
         # ------------------------------------
         # 5) Downsampling
         # ------------------------------------
-        H, W, _ = img_H.shape
+        C, H, W = img_H.shape
         intrinsics = compute_intrinsics(W,H)
-        
+        #print('image size = (%d, %d)' % (W,H))
+
+
+
         # --------------------------------
         # 7) add noise
         # --------------------------------

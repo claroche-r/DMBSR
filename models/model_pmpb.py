@@ -17,7 +17,7 @@ class ModelPMPB(ModelPlain):
         self.name_img = data['H_path']
         if need_H:
             self.H = data['H'].to(self.device)  # H
-
+        #print('images shape ', self.H.shape )
     # ----------------------------------------
     # feed (L, C) to netG and get E
     # ----------------------------------------

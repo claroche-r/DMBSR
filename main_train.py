@@ -117,6 +117,7 @@ def main(json_path='options/train_mbsr.json'):
     for epoch in range(opt['train']['n_epochs']):  # keep running
         for i, train_data in enumerate(train_loader):
             current_step += 1
+            #print('current step = %d' % i)
 
             # -------------------------------
             # 1) update learning rate
