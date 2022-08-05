@@ -42,6 +42,7 @@ def define_G(opt):
                    downsample_mode=opt_net['downsample_mode'],
                    upsample_mode=opt_net['upsample_mode']
                    )
+        
     else:
         raise NotImplementedError('netG [{:s}] is not found.'.format(net_type))
 

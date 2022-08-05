@@ -99,6 +99,40 @@ class Kernels2DLoss(torch.nn.Module):
 
 
 
+def masked_reblur_homographies(sharp_image, camera_positions, intrinsics, forward = True):
+    '''
+    sharp_image: BxCxHxW
+    camera_positions: BxPx3
+    intrinsics: 3x3
+    '''
+    H = sharp_image.size(2)
+    W = sharp_image.size(3)
+    reblured_image = torch.zeros_like(sharp_image).to(sharp_image.device)
+    mask = torch.zeros_like(sharp_image).cuda(sharp_image.device)
+    n_positions = camera_positions.shape[1]
+    warper = kornia.geometry.HomographyWarper(H, W, padding_mode='reflection')
+    for n in range(n_positions):
+        if forward:
+            dst_homo_src_n = compute_homography_from_position(camera_positions[0, n, :], intrinsics)
+        else:
+            dst_homo_src_n = compute_homography_from_position(camera_positions[0, n, :], intrinsics, inverse=True)
+
+        # dst_homo_src = torch.unsqueeze(intrinsics @ camera_positions, dim=0)
+        # dst_homo_src  = camera_model()
+
+        # print('dst_homo_src ', dst_homo_src)
+
+        src_homo_dst_n: torch.Tensor = torch.inverse(dst_homo_src_n)
+
+
+        # print('iter %d:' %i, 'dst_homo_src: ', dst_homo_src)
+        # print('src_homo_dst', src_homo_dst)
+        img_src_to_dst_n = warper(sharp_image, src_homo_dst_n)
+        reblured_image += img_src_to_dst_n / n_positions
+        mask += warper(torch.ones_like(sharp_image), src_homo_dst_n) / n_positions
+
+    return reblured_image, mask
+
 def reblur_homographies(sharp_image, camera_positions, intrinsics, forward = True):
     '''
     sharp_image: BxCxHxW
