@@ -1,7 +1,7 @@
 {
   "task": "nimbusr_pmpb" //  
   , "model": "pmpb" 
-  , "gpu_ids": [0]
+  , "gpu_ids": [0,1]
   , "n_channels": 3 // 1 for grayscale image restoration, 3 for color image restoration
   , "merge_bn": false
   , "merge_bn_startpoint": 300000
@@ -10,11 +10,11 @@
     "train": {
       "name": "train_dataset"
       , "dataset_type": "pmpb"
-      , "dataroot": "/data_ssd/users/carbajal/COCO_homographies_gf1"
+      , "dataroot": "/clusteruy/home/carbajal/data/COCO_homographies_gf1"
       //, "H_size": 256 // 128 | 192
       //, "use_flip": true
       , "use_rot": true
-      , "scales": [1]
+      , "scales": [1,2,4]
       , "sigma": [0, 25]
       , "dataloader_shuffle": true
       , "dataloader_num_workers": 1
