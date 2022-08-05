@@ -5,7 +5,7 @@ from models.CameraShakeModelTwoBranches import CameraShakeModelTwoBranches as Ca
 from torch.optim import Adam
 import torch
 from utils.utils_regularizers import regularizer_orth, regularizer_clip
-from utils.homographies import masked_reblur_homographies
+from utils.homographies import masked_reblur_homographies, Kernels2DLoss
 
 class ModelBlindPMPB(ModelPlain):
     """Train with inputs (L, positions, intrinsics, sf, sigma) and with pixel loss for USRNet"""
@@ -27,6 +27,7 @@ class ModelBlindPMPB(ModelPlain):
         self.define_optimizer()               # define optimizer
         self.load_optimizers()                # load optimizer
         self.define_scheduler()               # define scheduler
+        self.kernels2DLoss = Kernels2DLoss()
         self.reblur_loss_weight = self.opt_train['reblur_loss_weight']
         self.positions_loss_weight = self.opt_train['positions_loss_weight']
         self.kernels2D_loss_weight = self.opt_train['kernels2D_loss_weight']
@@ -95,7 +96,7 @@ class ModelBlindPMPB(ModelPlain):
         
         self.netG_forward()
         
-        reblured_image, mask = masked_reblur_homographies(self.E, self.estimated_positions, self.intrinsics)
+        reblured_image, mask = masked_reblur_homographies(self.E, self.estimated_positions, self.intrinsics[0])
         reblur_loss = torch.nn.functional.mse_loss(reblured_image, self.L, reduction='none') 
         reblur_loss = self.reblur_loss_weight * reblur_loss.masked_select((mask > 0.9)).mean()       
         
@@ -103,8 +104,8 @@ class ModelBlindPMPB(ModelPlain):
                                                  torch.nn.functional.mse_loss( self.positions, torch.flip(self.estimated_positions,dims=[1] )) )
         
         _, C, H, W = self.H.shape
-        kernels2D_loss = self.kernels2D_loss_weight * torch.min(kernels2D_loss(self.estimated_positions[0], self.positions[0], (H, W, C), self.intrinsics),
-                                            kernels2D_loss(torch.flip(self.estimated_positions[0],dims=[0]), self.positions[0], (H, W, C), self.intrinsics))
+        kernels2D_loss = self.kernels2D_loss_weight * torch.min(self.kernels2DLoss(self.estimated_positions[0], self.positions[0], (H, W, C),  self.intrinsics[0]),
+                                           self.kernels2DLoss(torch.flip(self.estimated_positions[0],dims=[0]), self.positions[0], (H, W, C),  self.intrinsics[0]))
         G_loss = self.G_lossfn_weight * self.G_lossfn(self.E, self.H)
         
         K_loss = reblur_loss + positions_loss + kernels2D_loss
