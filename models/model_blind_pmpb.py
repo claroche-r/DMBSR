@@ -53,7 +53,15 @@ class ModelBlindPMPB(ModelPlain):
     # feed (L, C) to netG and get E
     # ----------------------------------------
     def netG_forward(self):
+        # if self.mixed_precision:
+        #     with torch.cuda.amp.autocast():
+        #         self.estimated_positions = self.pos_network(self.L)
+        # else:
+        #     self.estimated_positions = self.pos_network(self.L)
+            
         self.estimated_positions = self.pos_network(self.L)
+        
+        #self.estimated_positions = self.estimated_positions.float()
         self.E = self.netG(self.L, self.estimated_positions, self.intrinsics, self.sf, self.sigma)
 
     def load(self):
@@ -96,27 +104,31 @@ class ModelBlindPMPB(ModelPlain):
         
         self.G_optimizer.zero_grad()
         self.K_optimizer.zero_grad()
+                     
+        self.netG_forward()
             
-        with torch.cuda.amp.autocast():
-            
-            self.netG_forward()
-            
-            reblured_image, mask = masked_reblur_homographies(self.E, self.estimated_positions, self.intrinsics[0])
-            reblur_loss = torch.nn.functional.mse_loss(reblured_image, self.L, reduction='none') 
-            reblur_loss = self.reblur_loss_weight * reblur_loss.masked_select((mask > 0.9)).mean()       
-            
-            positions_loss = self.positions_loss_weight * torch.min(torch.nn.functional.mse_loss( self.positions, self.estimated_positions ),
-                                                    torch.nn.functional.mse_loss( self.positions, torch.flip(self.estimated_positions,dims=[1] )) )
-            
-            _, C, H, W = self.H.shape
-            kernels2D_loss = self.kernels2D_loss_weight * torch.min(self.kernels2DLoss(self.estimated_positions[0], self.positions[0], (H, W, C),  self.intrinsics[0]),
+        reblured_image, mask = masked_reblur_homographies(self.E, self.estimated_positions, self.intrinsics[0])
+        
+        _, C, H, W = self.H.shape
+        
+        kernels2D_loss = self.kernels2D_loss_weight * torch.min(self.kernels2DLoss(self.estimated_positions[0], self.positions[0], (H, W, C),  self.intrinsics[0]),
                                             self.kernels2DLoss(torch.flip(self.estimated_positions[0],dims=[0]), self.positions[0], (H, W, C),  self.intrinsics[0]))
-            G_loss = self.G_lossfn_weight * self.G_lossfn(self.E, self.H)
-            
-            K_loss = reblur_loss + positions_loss + kernels2D_loss
-            
-            T_loss = G_loss + K_loss
-            
+                    
+       
+        reblur_loss = torch.nn.functional.mse_loss(reblured_image, self.L, reduction='none') 
+        reblur_loss = self.reblur_loss_weight * reblur_loss.masked_select((mask > 0.9)).mean()       
+        
+        positions_loss = self.positions_loss_weight * torch.min(torch.nn.functional.mse_loss( self.positions, self.estimated_positions ),
+                                                torch.nn.functional.mse_loss( self.positions, torch.flip(self.estimated_positions,dims=[1] )) )
+        
+        
+
+        G_loss = self.G_lossfn_weight * self.G_lossfn(self.E, self.H)
+        
+        K_loss = reblur_loss + positions_loss + kernels2D_loss
+        
+        T_loss = G_loss + K_loss
+                
         self.scaler.scale(T_loss).backward()
         self.scaler.unscale_(self.G_optimizer)
         self.scaler.unscale_(self.K_optimizer)
@@ -216,3 +228,8 @@ class ModelBlindPMPB(ModelPlain):
             self.optimize_parameters_mixed_precision(current_step)
         else:
             self.optimize_parameters_no_mixed_precision(current_step)
+            
+            
+    def save(self, iter_label):
+        super().save(iter_label)
+        self.save_network(self.save_dir, self.pos_network, 'pos_network', iter_label)
