@@ -106,4 +106,6 @@ class Dataset(data.Dataset):
     def __len__(self):
         if self.opt['phase'] == 'train':
             return len(self.blurry_files)
+        else:
+            return min(len(self.blurry_files), 100)
         

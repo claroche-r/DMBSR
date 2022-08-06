@@ -14,6 +14,9 @@ class ModelBlindPMPB(ModelPlain):
         super(ModelBlindPMPB, self).__init__(opt)
         self.pos_network = CameraShakeModel()
         self.pos_network = self.model_to_device(self.pos_network)
+        self.mixed_precision = self.opt_train['mixed_precision']
+        if self.mixed_precision:
+            self.scaler = torch.cuda.amp.GradScaler()
         
 
     # ----------------------------------------
@@ -88,6 +91,67 @@ class ModelBlindPMPB(ModelPlain):
         
     
     
+
+    def optimize_parameters_mixed_precision(self, current_step):
+        
+        self.G_optimizer.zero_grad()
+        self.K_optimizer.zero_grad()
+            
+        with torch.cuda.amp.autocast():
+            
+            self.netG_forward()
+            
+            reblured_image, mask = masked_reblur_homographies(self.E, self.estimated_positions, self.intrinsics[0])
+            reblur_loss = torch.nn.functional.mse_loss(reblured_image, self.L, reduction='none') 
+            reblur_loss = self.reblur_loss_weight * reblur_loss.masked_select((mask > 0.9)).mean()       
+            
+            positions_loss = self.positions_loss_weight * torch.min(torch.nn.functional.mse_loss( self.positions, self.estimated_positions ),
+                                                    torch.nn.functional.mse_loss( self.positions, torch.flip(self.estimated_positions,dims=[1] )) )
+            
+            _, C, H, W = self.H.shape
+            kernels2D_loss = self.kernels2D_loss_weight * torch.min(self.kernels2DLoss(self.estimated_positions[0], self.positions[0], (H, W, C),  self.intrinsics[0]),
+                                            self.kernels2DLoss(torch.flip(self.estimated_positions[0],dims=[0]), self.positions[0], (H, W, C),  self.intrinsics[0]))
+            G_loss = self.G_lossfn_weight * self.G_lossfn(self.E, self.H)
+            
+            K_loss = reblur_loss + positions_loss + kernels2D_loss
+            
+            T_loss = G_loss + K_loss
+            
+        self.scaler.scale(T_loss).backward()
+        self.scaler.unscale_(self.G_optimizer)
+        self.scaler.unscale_(self.K_optimizer)
+
+        # ------------------------------------
+        # clip_grad
+        # ------------------------------------
+        # `clip_grad_norm` helps prevent the exploding gradient problem.
+        G_optimizer_clipgrad = self.opt_train['G_optimizer_clipgrad'] if self.opt_train['G_optimizer_clipgrad'] else 0
+        if G_optimizer_clipgrad > 0:
+            torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.opt_train['G_optimizer_clipgrad'], norm_type=2)
+
+        self.scaler.step(self.G_optimizer)
+        self.scaler.step(self.K_optimizer)
+
+        # ------------------------------------
+        # regularizer
+        # ------------------------------------
+        G_regularizer_orthstep = self.opt_train['G_regularizer_orthstep'] if self.opt_train['G_regularizer_orthstep'] else 0
+        if G_regularizer_orthstep > 0 and current_step % G_regularizer_orthstep == 0 and current_step % self.opt['train']['checkpoint_save'] != 0:
+            self.netG.apply(regularizer_orth)
+        G_regularizer_clipstep = self.opt_train['G_regularizer_clipstep'] if self.opt_train['G_regularizer_clipstep'] else 0
+        if G_regularizer_clipstep > 0 and current_step % G_regularizer_clipstep == 0 and current_step % self.opt['train']['checkpoint_save'] != 0:
+            self.netG.apply(regularizer_clip)
+
+        # self.log_dict['G_loss'] = G_loss.item()/self.E.size()[0]  # if `reduction='sum'`
+        self.log_dict['G_loss'] = G_loss.item()
+        self.log_dict['K_loss'] = K_loss.item()
+        self.log_dict['T_loss'] = T_loss.item()
+
+        if self.opt_train['E_decay'] > 0:
+            self.update_E(self.opt_train['E_decay'])
+        
+        self.scaler.update()
+
     
     def optimize_parameters_no_mixed_precision(self, current_step):
         self.G_optimizer.zero_grad()
