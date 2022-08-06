@@ -87,10 +87,9 @@ class ModelBlindPMPB(ModelPlain):
         self.K_optimizer = Adam(K_optim_params, lr=self.opt_train['K_optimizer_lr'], weight_decay=0)
         
     
-        # ----------------------------------------
-    # update parameters and get loss
-    # ----------------------------------------
-    def optimize_parameters(self, current_step):
+    
+    
+    def optimize_parameters_no_mixed_precision(self, current_step):
         self.G_optimizer.zero_grad()
         self.K_optimizer.zero_grad()
         
@@ -142,3 +141,14 @@ class ModelBlindPMPB(ModelPlain):
 
         if self.opt_train['E_decay'] > 0:
             self.update_E(self.opt_train['E_decay'])
+    
+    
+    
+    # ----------------------------------------
+    # update parameters and get loss
+    # ----------------------------------------
+    def optimize_parameters(self, current_step):
+        if self.mixed_precision:
+            self.optimize_parameters_no_mixed_precision(current_step)
+        else:
+            self.optimize_parameters_mixed_precision(current_step)
