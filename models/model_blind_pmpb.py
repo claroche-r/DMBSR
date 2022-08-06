@@ -14,7 +14,7 @@ class ModelBlindPMPB(ModelPlain):
         super(ModelBlindPMPB, self).__init__(opt)
         self.pos_network = CameraShakeModel()
         self.pos_network = self.model_to_device(self.pos_network)
-        
+        #self.pos_network.cuda(1)
 
     # ----------------------------------------
     # initialize training
