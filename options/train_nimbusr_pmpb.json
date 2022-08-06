@@ -25,7 +25,7 @@
 
   , "path": {
     "root": "SR"
-    // ,"pretrained_netG":"model_zoo/resunet_big_full.pth"
+    ,"pretrained_netG":"model_zoo/NIMBUSR.pth"
   }
 
   , "netG": {

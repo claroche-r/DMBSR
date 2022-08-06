@@ -14,6 +14,7 @@ from utils import utils_logger
 from utils import utils_image as util
 from utils import utils_option as option
 from utils import utils_sisr as sisr
+from utils import utils_dist as dist
 
 from data.select_dataset import define_Dataset
 from models.select_model import define_Model
@@ -29,13 +30,13 @@ def main(json_path='options/train_mbsr.json'):
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-opt', type=str, default=json_path, help='Path to option JSON file.')
-
+    parser.add_argument('--local_rank', type=int, default=0)  # added GC
     opt = option.parse(parser.parse_args().opt, is_train=True)
     util.mkdirs((path for key, path in opt['path'].items() if 'pretrained' not in key))
 
     current_step = opt['train']['current_step'] if opt['train']['current_step'] else 0
     border = opt['scale']
-
+    #dist.init_dist("pytorch")  # GC
     # ----------------------------------------
     # save opt to  a '../option.json' file
     # ----------------------------------------
