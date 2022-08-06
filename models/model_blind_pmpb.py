@@ -213,6 +213,6 @@ class ModelBlindPMPB(ModelPlain):
     # ----------------------------------------
     def optimize_parameters(self, current_step):
         if self.mixed_precision:
-            self.optimize_parameters_no_mixed_precision(current_step)
-        else:
             self.optimize_parameters_mixed_precision(current_step)
+        else:
+            self.optimize_parameters_no_mixed_precision(current_step)
