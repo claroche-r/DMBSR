@@ -13,8 +13,23 @@
       , "dataroot": "/clusteruy/home/carbajal/data/COCO_homographies_gf1"
       //, "H_size": 256 // 128 | 192
       //, "use_flip": true
+      , "resize_factor": 0.75
       , "use_rot": true
       , "scales": [1,2,4]
+      , "sigma": [0, 25]
+      , "dataloader_shuffle": true
+      , "dataloader_num_workers": 1
+      , "dataloader_batch_size": 1
+      //, "coco_annotation_path": "datasets/COCO/instances_train2014.json"
+    },
+    "test": {
+      "name": "test_dataset"
+      , "dataset_type": "pmpb"
+      , "dataroot": "/data_ssd/users/carbajal/COCO_homographies_small_gf1"
+      //, "H_size": 256 // 128 | 192
+      //, "use_flip": true
+      //, "use_rot": true
+      , "scales": [1] //[1, 2, 3, 4]
       , "sigma": [0, 25]
       , "dataloader_shuffle": true
       , "dataloader_num_workers": 1
@@ -25,7 +40,7 @@
 
   , "path": {
     "root": "SR"
-    // ,"pretrained_netG":"model_zoo/resunet_big_full.pth"
+    ,"pretrained_netG":"model_zoo/NIMBUSR.pth"
   }
 
   , "netG": {
@@ -50,7 +65,7 @@
     , "G_lossfn_weight": 1.0
 
     , "G_optimizer_type": "adam"
-    , "G_optimizer_lr": 1e-4
+    , "G_optimizer_lr": 1e-5
     , "G_optimizer_wd": 0
     , "G_optimizer_clipgrad": null
 
@@ -58,11 +73,13 @@
     , "G_scheduler_milestones": [2000, 8000, 12000, 16000, 20000]
     , "G_scheduler_gamma": 0.5
 
+    , "G_param_strict": false  // added GC
+
     , "G_regularizer_orthstep": null
     , "G_regularizer_clipstep": null
 
     , "checkpoint_test": 99999999999999999999999999999999999 //500
-    , "checkpoint_save": 50000 //500
+    , "checkpoint_save": 5000 //500
     , "checkpoint_print": 50
     , "n_epochs": 200
     , "current_step": 0

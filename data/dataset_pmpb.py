@@ -21,7 +21,7 @@ class Dataset(data.Dataset):
         self.opt = opt
         self.n_channels = opt['n_channels'] if opt['n_channels'] else 3
 
-
+        self.resize_factor =  opt['resize_factor'] if opt['resize_factor'] is not None else 1
         self.scales = opt['scales'] if opt['scales'] is not None else [1,2,3,4]
         self.sigma = opt['sigma'] if opt['sigma'] else [0, 25]
         self.sigma_min, self.sigma_max = self.sigma[0], self.sigma[1]
@@ -62,9 +62,10 @@ class Dataset(data.Dataset):
 
         img_H = util.single2tensor3(img_H)
         img_L = util.single2tensor3(img_L)
-
-        #img_H = util.imresize(img_H, 0.5)
-        #img_L = util.imresize(img_L, 0.5)
+        
+        if self.resize_factor < 1:
+            img_H = util.imresize(img_H, self.resize_factor)
+            img_L = util.imresize(img_L, self.resize_factor)
         
         P_path = os.path.join(self.dataroot, 'positions', self.positions_files[index])
         camera_positions_np = np.loadtxt(P_path, delimiter=',')
@@ -105,4 +106,6 @@ class Dataset(data.Dataset):
     def __len__(self):
         if self.opt['phase'] == 'train':
             return len(self.blurry_files)
+        else:
+            return min(len(self.blurry_files), 100)
         
