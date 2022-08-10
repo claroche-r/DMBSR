@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--blurry_image', '-b', type=str, help='blurry image', default='/home/guillermo/github/camera_shake/data/COCO_homographies_small_gf1/blurry/000000000009_0.jpg')
 parser.add_argument('--positions', '-p', type=str, help='positions', default='/home/guillermo/github/camera_shake/data/COCO_homographies_small_gf1/positions/000000000009_0.txt')
 parser.add_argument('--rescale_factor','-rf', type=float, default=1)
-parser.add_argument('--restoration_method','-rm', type=str, default='RL')
+parser.add_argument('--restoration_method','-rm', type=str, default='NIMBUSR')
 
 args = parser.parse_args()
 
@@ -51,7 +51,7 @@ def load_nimbusr_net():
 
           , "coco_annotation_path": "datasets/COCO/instances_val2014.json"}
 
-    path_pretrained = r'../model_zoo/NIMBUSR.pth'
+    path_pretrained = r'../model_zoo/PMPB_145000_G.pth' #r'../model_zoo/NIMBUSR.pth'
 
     netG = net(n_iter=opt_net['n_iter'],
                    h_nc=opt_net['h_nc'],
@@ -104,9 +104,11 @@ if restoration_method=='RL':
     #combined_RL_restore_from_positions(blurry_tensor, initial_tensor, camera_positions, n_iters, GPU, isDebug=True)
 else: 
     netG = load_nimbusr_net()
+    netG.eval()
     noise_level = 0.01
     noise_level = torch.FloatTensor([noise_level]).view(1,1,1).cuda(GPU)
-    output = netG(blurry_tensor, camera_positions, intrinsics, 1, sigma=noise_level[None,:])
+    with torch.no_grad():
+        output = netG(blurry_tensor, camera_positions, intrinsics, 1, sigma=noise_level[None,:])
     
 
 img_name, ext = blurry_image_filename.split('/')[-1].split('.')    
