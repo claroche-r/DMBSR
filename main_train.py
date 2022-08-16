@@ -184,6 +184,10 @@ def main(json_path='options/train_mbsr.json'):
                     util.imsave(H_img, save_img_path[:-4] + '_H.png')
                     util.imsave(L_img, save_img_path[:-4] + '_L.png')
 
+                    if visuals['fig'] is not None:
+                        fig = visuals['fig']
+                        fig.savefig(save_img_path[:-4] + '_pos.png')
+
 
                     # -----------------------
                     # calculate PSNR

@@ -1,5 +1,5 @@
 {
-  "task": "nimbusr_pmpb" //  
+  "task": "nimbusr_pmpb_075" //  
   , "model": "pmpb" 
   , "gpu_ids": [0]
   , "n_channels": 3 // 1 for grayscale image restoration, 3 for color image restoration
@@ -16,7 +16,7 @@
       , "resize_factor": 0.75
       , "use_rot": true
       , "scales": [1]
-      , "sigma": [0, 25]
+      , "sigma": [0, 5]
       , "dataloader_shuffle": true
       , "dataloader_num_workers": 1
       , "dataloader_batch_size": 1
@@ -30,7 +30,7 @@
       //, "use_flip": true
       //, "use_rot": true
       , "scales": [1] //[1, 2, 3, 4]
-      , "sigma": [0, 25]
+      , "sigma": [0, 5]
       , "dataloader_shuffle": true
       , "dataloader_num_workers": 1
       , "dataloader_batch_size": 1
@@ -78,7 +78,7 @@
     , "G_regularizer_orthstep": null
     , "G_regularizer_clipstep": null
 
-    , "checkpoint_test": 99999999999999999999999999999999999 //500
+    , "checkpoint_test": 500 //500
     , "checkpoint_save": 5000 //500
     , "checkpoint_print": 50
     , "n_epochs": 200

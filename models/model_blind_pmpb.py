@@ -5,7 +5,7 @@ from models.CameraShakeModelTwoBranches import CameraShakeModelTwoBranches as Ca
 from torch.optim import Adam
 import torch
 from utils.utils_regularizers import regularizer_orth, regularizer_clip
-from utils.homographies import masked_reblur_homographies, Kernels2DLoss
+from utils.homographies import masked_reblur_homographies, Kernels2DLoss, show_positions
 
 class ModelBlindPMPB(ModelPlain):
     """Train with inputs (L, positions, intrinsics, sf, sigma) and with pixel loss for USRNet"""
@@ -170,17 +170,21 @@ class ModelBlindPMPB(ModelPlain):
         self.K_optimizer.zero_grad()
         
         self.netG_forward()
+        reblur_loss = torch.Tensor([0]).to(self.E.device); positions_loss=torch.Tensor([0]).to(self.E.device); kernels2D_loss=torch.Tensor([0]).to(self.E.device)
+        if self.reblur_loss_weight>0: 
+            reblured_image, mask = masked_reblur_homographies(self.E, self.estimated_positions, self.intrinsics[0])
+            reblur_loss = torch.nn.functional.mse_loss(reblured_image, self.L, reduction='none') 
+            reblur_loss = self.reblur_loss_weight * reblur_loss.masked_select((mask > 0.9)).mean()       
         
-        reblured_image, mask = masked_reblur_homographies(self.E, self.estimated_positions, self.intrinsics[0])
-        reblur_loss = torch.nn.functional.mse_loss(reblured_image, self.L, reduction='none') 
-        reblur_loss = self.reblur_loss_weight * reblur_loss.masked_select((mask > 0.9)).mean()       
+        if self.positions_loss_weight:
+            positions_loss = self.positions_loss_weight * torch.min(torch.nn.functional.mse_loss( self.positions, self.estimated_positions ), 
+                        torch.nn.functional.mse_loss( self.positions, torch.flip(self.estimated_positions,dims=[1] )) )
         
-        positions_loss = self.positions_loss_weight * torch.min(torch.nn.functional.mse_loss( self.positions, self.estimated_positions ),
-                                                 torch.nn.functional.mse_loss( self.positions, torch.flip(self.estimated_positions,dims=[1] )) )
-        
-        _, C, H, W = self.H.shape
-        kernels2D_loss = self.kernels2D_loss_weight * torch.min(self.kernels2DLoss(self.estimated_positions[0], self.positions[0], (H, W, C),  self.intrinsics[0]),
+        if self.kernels2D_loss_weight:
+            _, C, H, W = self.H.shape
+            kernels2D_loss = self.kernels2D_loss_weight * torch.min(self.kernels2DLoss(self.estimated_positions[0], self.positions[0], (H, W, C),  self.intrinsics[0]),
                                            self.kernels2DLoss(torch.flip(self.estimated_positions[0],dims=[0]), self.positions[0], (H, W, C),  self.intrinsics[0]))
+        
         G_loss = self.G_lossfn_weight * self.G_lossfn(self.E, self.H)
         
         K_loss = reblur_loss + positions_loss + kernels2D_loss
@@ -212,7 +216,7 @@ class ModelBlindPMPB(ModelPlain):
 
         # self.log_dict['G_loss'] = G_loss.item()/self.E.size()[0]  # if `reduction='sum'`
         self.log_dict['G_loss'] = G_loss.item()
-        self.log_dict['K_loss'] = K_loss.item()
+        self.log_dict['K_loss'] = K_loss.item() 
         self.log_dict['T_loss'] = T_loss.item()
 
         if self.opt_train['E_decay'] > 0:
@@ -233,3 +237,16 @@ class ModelBlindPMPB(ModelPlain):
     def save(self, iter_label):
         super().save(iter_label)
         self.save_network(self.save_dir, self.pos_network, 'pos_network', iter_label)
+
+    def current_visuals(self):
+        out_dict = super().current_visuals()    
+
+        found_positions_np = self.estimated_positions[0].detach().cpu().numpy() 
+        gt_positions_np = self.positions[0].detach().cpu().numpy()                   
+        fig = show_positions(found_positions_np, gt_positions_np)
+        out_dict['fig']=fig
+        #fig.savefig(os.path.join(OUTPUT_DIR, 'iter_%d_positions_found.png' % n_update))
+
+
+        return out_dict
+
