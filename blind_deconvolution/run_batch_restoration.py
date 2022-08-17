@@ -1,11 +1,12 @@
 import os
 
-folder= '/clusteruy/home/carbajal/data/COCO_homographies_small_gf1' #'/home/guillermo/github/camera_shake/data/COCO_homographies_small_gf1'
+folder= '/media/carbajal/OS/data/datasets/COCO_homographies_small_gf1_val'  #'/clusteruy/home/carbajal/data/COCO_homographies_small_gf1' #'/home/guillermo/github/camera_shake/data/COCO_homographies_small_gf1'
 blurry_folder=os.path.join(folder,'blurry')
 blurry_files = os.listdir(blurry_folder)
+blurry_files.sort()
 positions_folder=os.path.join(folder,'positions')
 positions_files = os.listdir(positions_folder)
-
+positions_files.sort()
 for blurry, position in zip(blurry_files, positions_files):
     blurry_filename = os.path.join(blurry_folder, blurry)
     positions_filename = os.path.join(positions_folder, position)

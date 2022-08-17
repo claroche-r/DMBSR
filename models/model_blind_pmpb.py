@@ -62,7 +62,12 @@ class ModelBlindPMPB(ModelPlain):
         self.estimated_positions = self.pos_network(self.L)
         
         #self.estimated_positions = self.estimated_positions.float()
-        self.E = self.netG(self.L, self.estimated_positions, self.intrinsics, self.sf, self.sigma)
+        
+        if self.opt_train['G_lossfn_weight']>0:
+            self.E = self.netG(self.L, self.estimated_positions, self.intrinsics, self.sf, self.sigma)
+        else:
+            with torch.no_grad():
+                self.E = self.netG(self.L, self.estimated_positions, self.intrinsics, self.sf, self.sigma)
 
     def load(self):
         load_path_G = self.opt['path']['pretrained_netG']

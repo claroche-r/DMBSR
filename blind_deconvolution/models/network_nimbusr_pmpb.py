@@ -305,6 +305,10 @@ class NIMBUSR_PMPB(nn.Module):
         h_0 = pmpb_batch(x_0, positions, intrinsics)
         u_0 = torch.zeros_like(z_0)
         ab = self.h(torch.cat((sigma, torch.tensor(sf).type_as(sigma).expand_as(sigma)), dim=1))
+        #print(x_0.shape)
+        #aux = [util.tensor2img(x_0)[:,:,[2,1,0]]]
+        #print(aux.shape)
+        #util.imssave([aux], 'initial_image.png')
 
         for i in range(self.n):
             # Hyper-params
@@ -315,10 +319,13 @@ class NIMBUSR_PMPB(nn.Module):
             # ADMM steps
             i_0 = x_0 - beta * transpose_pmpb_batch(h_0 - z_0 + u_0, positions, intrinsics)
             x_0 = self.p(torch.cat((i_0, gamma.repeat(1, 1, i_0.size(2), i_0.size(3))), dim=1))
+            #aux.append(util.tensor2img(x_0)[:,:,[2,1,0]])
             h_0 = pmpb_batch(x_0, positions, intrinsics)
             z_0 = self.d(h_0 + u_0, STy, alpha, sf, sigma)
             u_0 = u_0 + h_0 - z_0
-
+        
+        
+        #util.imssave(aux, 'img%d_step.png' % (np.random.randint(10)))
         # Hyper-params
         beta = ab[:, 2*self.n+1:2*(self.n+1), ...]
         gamma = ab[:, 3*self.n+2:, ...]

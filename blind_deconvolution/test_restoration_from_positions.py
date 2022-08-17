@@ -19,7 +19,7 @@ args = parser.parse_args()
 
 def load_nimbusr_net():
     
-    opt_net = { "n_iter": 8
+    opt_net = { "n_iter": 8 #20 #8
         , "h_nc": 64
         , "in_nc": 4
         , "out_nc": 3
@@ -51,7 +51,7 @@ def load_nimbusr_net():
 
           , "coco_annotation_path": "datasets/COCO/instances_val2014.json"}
 
-    path_pretrained = r'../model_zoo/PMPB_145000_G.pth' #r'../model_zoo/NIMBUSR.pth'
+    path_pretrained =  r'../model_zoo/PMPB_220000_G.pth' #r'../model_zoo/NIMBUSR.pth' # # r'../model_zoo/NIMBUSR.pth' #r'../model_zoo/PMPB_145000_G.pth' #r'../model_zoo/NIMBUSR.pth'
 
     netG = net(n_iter=opt_net['n_iter'],
                    h_nc=opt_net['h_nc'],
