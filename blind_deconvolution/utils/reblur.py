@@ -112,6 +112,26 @@ def compute_kernels_regularization_loss(kernels, KERNELS_REGULARIZATION_TYPE, KE
     return kernels_regularization_loss
 
 
+def get_masks_weights(gt_masks):
+    # store the contribution of each ground-truth mask,
+    gt_masks_sums = gt_masks.sum(3).sum(2)
+
+    # for each mask pixel is stored the contribution os its associated mask, size=(N, H, H)
+    masks_areas = (gt_masks * gt_masks_sums[:, :, np.newaxis, np.newaxis]).sum(1)
+
+    # when calculating the kernel differences for each pixel, the weight each pixel will have will be
+    # inversely proportional to its associated mask area
+
+    try:
+        #print(gt_masks.shape)
+        roi = (torch.max(gt_masks > 0.95, (1)).values).float() # only pixels with dominant kernel are used to compute loss
+        #print(roi.shape, roi.dtype, masks_areas.shape)
+        masks_weights = 1.0 / (masks_areas + 1) * roi
+        #print(masks_weights.shape)
+    except:
+        print('Error computing mask weights')
+
+    return masks_weights
 
 def compute_reblurred_image_and_kernel_loss(sharp_image, kernels, masks, gt_kernels, gt_masks,
                         masks_weights, kernels_loss_type,  GPU=0, manage_saturated_pixels=True,

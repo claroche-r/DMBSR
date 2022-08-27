@@ -184,11 +184,16 @@ def main(json_path='options/train_mbsr.json'):
                     util.imsave(H_img, save_img_path[:-4] + '_H.png')
                     util.imsave(L_img, save_img_path[:-4] + '_L.png')
 
-                    if visuals['fig'] is not None:
+                    if 'fig' in visuals.keys():
                         fig = visuals['fig']
                         fig.savefig(save_img_path[:-4] + '_pos.png')
+                        util.imsave(visuals['kernels_gt'], save_img_path[:-4] + '_kernels_gt.png')
+                        util.imsave(visuals['kernels_estimated'], save_img_path[:-4] + '_kernels_estimated.png')
 
-
+                    if 'kernels_grid' in visuals.keys():
+                        util.imsave( visuals['gt_kernels_grid'], save_img_path[:-4] + '_kernels_gt.png')
+                        util.imsave( visuals['kernels_grid'], save_img_path[:-4] + '_kernels_estimated.png')
+                        
                     # -----------------------
                     # calculate PSNR
                     # -----------------------
@@ -197,6 +202,7 @@ def main(json_path='options/train_mbsr.json'):
                     logger.info('{:->4d}--> {:>10s} | {:<4.2f}dB'.format(idx, image_name_ext, current_psnr))
 
                     avg_psnr += current_psnr
+                    
 
                 avg_psnr = avg_psnr / idx
 

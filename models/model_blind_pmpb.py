@@ -5,7 +5,8 @@ from models.CameraShakeModelTwoBranches import CameraShakeModelTwoBranches as Ca
 from torch.optim import Adam
 import torch
 from utils.utils_regularizers import regularizer_orth, regularizer_clip
-from utils.homographies import masked_reblur_homographies, Kernels2DLoss, show_positions
+from utils.homographies import masked_reblur_homographies, Kernels2DLoss, show_positions, CurvatureLoss2,  generarK, mostrar_kernels
+import utils.utils_image as util
 
 class ModelBlindPMPB(ModelPlain):
     """Train with inputs (L, positions, intrinsics, sf, sigma) and with pixel loss for USRNet"""
@@ -31,9 +32,13 @@ class ModelBlindPMPB(ModelPlain):
         self.load_optimizers()                # load optimizer
         self.define_scheduler()               # define scheduler
         self.kernels2DLoss = Kernels2DLoss()
+        self.curvatureLoss = CurvatureLoss2()
         self.reblur_loss_weight = self.opt_train['reblur_loss_weight']
         self.positions_loss_weight = self.opt_train['positions_loss_weight']
         self.kernels2D_loss_weight = self.opt_train['kernels2D_loss_weight']
+        self.curvature_loss_weight = self.opt_train['curvature_loss_weight']
+        self.grad_accum_iters = self.opt_train['grad_accum_iters'] if self.opt_train['grad_accum_iters'] is not None else 1
+        self.iter = 0
         self.log_dict = OrderedDict()         # log
     
     # ----------------------------------------
@@ -58,8 +63,9 @@ class ModelBlindPMPB(ModelPlain):
         #         self.estimated_positions = self.pos_network(self.L)
         # else:
         #     self.estimated_positions = self.pos_network(self.L)
-            
-        self.estimated_positions = self.pos_network(self.L)
+        
+        #oversampled_image = util.imresize(self.L[0].detach().cpu(), 2)[None]    
+        self.estimated_positions = self.pos_network(self.L)  #(oversampled_image.to(self.L.device))
         
         #self.estimated_positions = self.estimated_positions.float()
         
@@ -171,11 +177,10 @@ class ModelBlindPMPB(ModelPlain):
 
     
     def optimize_parameters_no_mixed_precision(self, current_step):
-        self.G_optimizer.zero_grad()
-        self.K_optimizer.zero_grad()
         
         self.netG_forward()
-        reblur_loss = torch.Tensor([0]).to(self.E.device); positions_loss=torch.Tensor([0]).to(self.E.device); kernels2D_loss=torch.Tensor([0]).to(self.E.device)
+        reblur_loss = torch.Tensor([0]).to(self.E.device); positions_loss=torch.Tensor([0]).to(self.E.device); 
+        kernels2D_loss=torch.Tensor([0]).to(self.E.device); curvature_loss=torch.Tensor([0]).to(self.E.device)
         if self.reblur_loss_weight>0: 
             reblured_image, mask = masked_reblur_homographies(self.E, self.estimated_positions, self.intrinsics[0])
             reblur_loss = torch.nn.functional.mse_loss(reblured_image, self.L, reduction='none') 
@@ -190,11 +195,15 @@ class ModelBlindPMPB(ModelPlain):
             kernels2D_loss = self.kernels2D_loss_weight * torch.min(self.kernels2DLoss(self.estimated_positions[0], self.positions[0], (H, W, C),  self.intrinsics[0]),
                                            self.kernels2DLoss(torch.flip(self.estimated_positions[0],dims=[0]), self.positions[0], (H, W, C),  self.intrinsics[0]))
         
+        if self.curvature_loss_weight:
+            curvature_loss = self.curvature_loss_weight * self.curvatureLoss(self.estimated_positions)
+            print('curvature loss: ',  curvature_loss)
+        
         G_loss = self.G_lossfn_weight * self.G_lossfn(self.E, self.H)
         
-        K_loss = reblur_loss + positions_loss + kernels2D_loss
+        K_loss = reblur_loss + positions_loss + kernels2D_loss  + curvature_loss
         
-        T_loss = G_loss + K_loss
+        T_loss = (G_loss + K_loss)/self.grad_accum_iters
         
         T_loss.backward()
 
@@ -206,8 +215,15 @@ class ModelBlindPMPB(ModelPlain):
         if G_optimizer_clipgrad > 0:
             torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.opt_train['G_optimizer_clipgrad'], norm_type=2)
 
-        self.G_optimizer.step()
-        self.K_optimizer.step()
+
+        if current_step % self.grad_accum_iters ==0:
+            self.G_optimizer.step()
+            self.K_optimizer.step()
+            
+            self.G_optimizer.zero_grad()
+            self.K_optimizer.zero_grad()
+            print('weights updated at iter %d' %current_step)
+
 
         # ------------------------------------
         # regularizer
@@ -250,8 +266,30 @@ class ModelBlindPMPB(ModelPlain):
         gt_positions_np = self.positions[0].detach().cpu().numpy()                   
         fig = show_positions(found_positions_np, gt_positions_np)
         out_dict['fig']=fig
+        
+        pose = np.zeros((found_positions_np.shape[0], 6))
+        pose[:, 3:] = gt_positions_np
+        C,M,N = self.L.shape[1:]
+        K, _ = generarK( (M,N,C) , pose)
+        kernels_gt =mostrar_kernels(K, (M,N,C), output_name = "kernels_gt.png")
+        out_dict['kernels_gt']=kernels_gt*255
+        pose[:, 3:] = found_positions_np
+        K, _ = generarK((M,N,C), pose)
+        kernels_estimated = mostrar_kernels(K, (M,N,C), output_name = "kernels_estimated.png")
+        out_dict['kernels_estimated']=kernels_estimated*255
         #fig.savefig(os.path.join(OUTPUT_DIR, 'iter_%d_positions_found.png' % n_update))
 
 
         return out_dict
+    
+    # ----------------------------------------
+    # test / inference
+    # ----------------------------------------
+    def test(self):
+        self.netG.eval()
+        self.pos_network.eval()
+        with torch.no_grad():
+            self.netG_forward()
+        self.netG.train()
+        self.pos_network.train()
 

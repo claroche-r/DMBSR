@@ -63,7 +63,7 @@ class Dataset(data.Dataset):
         img_H = util.single2tensor3(img_H)
         img_L = util.single2tensor3(img_L)
         
-        if self.resize_factor < 1:
+        if self.resize_factor != 1:
             img_H = util.imresize(img_H, self.resize_factor)
             img_L = util.imresize(img_L, self.resize_factor)
         

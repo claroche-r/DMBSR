@@ -19,20 +19,55 @@ class TrajectoryLengthLoss(torch.nn.Module):
         return loss
 
 class CurvatureLoss(torch.nn.Module):
-    """L1 Charbonnierloss."""
+    """CurvatureLoss: https://www.cs.jhu.edu/~misha/Fall09/1-curves.pdf"""
     def __init__(self):
         super(CurvatureLoss, self).__init__()
         self.eps = 1e-6
 
     def forward(self, positions):
-        diff_vectors = positions[:,1:,]-positions[:,:-1,]
+        # positions is len N vector
+        diff_vectors =  positions[:,1:,]  - positions[:,:-1,] # diff_vectors is len(N-1) vector
+        diff_vectors = diff_vectors/diff_vectors.sum()
         diff_vector_norm = torch.norm(diff_vectors, p=2, dim=2)
-        dot_products = torch.sum(diff_vectors[:,1:,:] * diff_vectors[:,:-1,:], dim=2)
+        dot_products = torch.sum(diff_vectors[:,1:,:] * (diff_vectors[:,:-1,:]), dim=2) # t2 dot t1
         cos_angles = dot_products/(diff_vector_norm[:,1:] * diff_vector_norm[:,:-1])
         angles = torch.acos(cos_angles)
+        print('angles (grados): ', 180.*angles/np.pi)
         curvatures = angles/(torch.norm(diff_vectors[:,1:]/2, p=2, dim=2) + torch.norm(diff_vectors[:,:-1]/2, p=2, dim=2))
-        loss = torch.sum(torch.abs(curvatures))
+      
+        #curvatures = (diff_vectors[0,1:,:] /diff_vector_norm[0,1:,None] - diff_vectors[0,:-1,:] / diff_vector_norm[0,:-1,None])
+        #curvatures = curvatures/(diff_vector_norm[:,1:] +diff_vector_norm[:,1:] )*2
+        
+        #print('curvatures: ', curvatures)
+        loss = torch.mean(torch.abs(curvatures))
         return loss
+    
+class CurvatureLoss2(torch.nn.Module):
+    """CurvatureLoss: https://www.cs.jhu.edu/~misha/Fall09/1-curves.pdf"""
+    def __init__(self):
+        super(CurvatureLoss2, self).__init__()
+        self.eps = 1e-6
+
+    def forward(self, positions):
+        # positions is len N vector
+        diff_vectors =  positions[:,1:,]  - positions[:,:-1,] # diff_vectors is len(N-1) vector
+        diff_vectors = diff_vectors/diff_vectors.sum()
+        diff_vector_norm = torch.norm(diff_vectors, p=2, dim=2)
+        tangents = diff_vectors/diff_vector_norm[:,:,None]
+        middle_points = (positions[:,2:,] - positions[:,:-2,])/2
+        #dot_products = torch.sum(diff_vectors[:,1:,:] * (diff_vectors[:,:-1,:]), dim=2) # t2 dot t1
+        #cos_angles = dot_products/(diff_vector_norm[:,1:] * diff_vector_norm[:,:-1])
+        #angles = torch.acos(cos_angles)
+        #print('angles (grados): ', 180.*angles/np.pi)
+        diff_tangents = tangents[:,1:,:] - tangents[:,:-1,:]
+        curvatures = torch.norm(diff_tangents, p=2, dim=2)/(torch.norm(middle_points, p=2, dim=2))
+      
+        #curvatures = (diff_vectors[0,1:,:] /diff_vector_norm[0,1:,None] - diff_vectors[0,:-1,:] / diff_vector_norm[0,:-1,None])
+        #curvatures = curvatures/(diff_vector_norm[:,1:] +diff_vector_norm[:,1:] )*2
+        
+        #print('curvatures: ', curvatures)
+        loss = torch.mean(torch.abs(curvatures))
+        return loss    
 
 class SymmetricLoss(torch.nn.Module):
     def __init__(self, loss_type='L1'):
@@ -433,7 +468,7 @@ def mostrar_kernels(K, img_shape, padding=65, window=65, output_name='kernels.pn
     if padding>0:
         output_img = output_img[padding:-padding, padding:-padding]
     imsave(output_name, output_img)
-
+    return output_img
 
 def compute_projection_matrix(camera_position):
     '''
