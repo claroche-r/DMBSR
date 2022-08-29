@@ -27,6 +27,8 @@ def define_Model(opt):
         from models.model_pmpb import ModelPMPB as M
     elif model == 'blind_pmpb':  # four inputs: L, positions, intrinsics, sf, sigma
         from models.model_blind_pmpb import ModelBlindPMPB as M
+    elif model == 'blind_nimbusr':  # four inputs: L, positions, intrinsics, sf, sigma
+        from models.model_blind_nimbusr import ModelBlindNIMBUSR as M
     else:
         raise NotImplementedError('Model [{:s}] is not defined.'.format(model))
 

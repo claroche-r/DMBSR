@@ -1,40 +1,50 @@
-import torch
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms, datasets
-from PIL import Image, ImageDraw
-from skimage.io import imsave
-from skimage.color import rgb2gray, rgb2hsv, hsv2rgb
 import os
-import numpy as np
 import random
-from scipy import io
-from scipy.ndimage import convolve
-#from matplotlib import pyplot as plt
+import numpy as np
 
+from scipy import ndimage
+from scipy.io import loadmat
+
+import torch
+import torch.nn.functional as F
+import torch.utils.data as data
+from blind_deconvolution.utils.homographies import compute_intrinsics
+
+import utils.utils_image as util
+import utils.utils_sisr as sisr
+from utils import utils_deblur
 from pycocotools.coco import COCO
-#from pycocotools import mask as maskUtils
+from scipy.ndimage import convolve
+from PIL import Image, ImageDraw
+from skimage.color import rgb2gray, rgb2hsv, hsv2rgb
+from scipy import io
 
+class Dataset(data.Dataset):
+    def __init__(self, opt):
+        super(Dataset, self).__init__()
+        self.opt = opt
+        self.n_channels = opt['n_channels'] if opt['n_channels'] else 3
 
-class COCONonUniformBlurDataset(Dataset):
-    def __init__( self, sharp_image_files,  kernel_image_files, sharp_root_dir, kernel_root_dir, crop_size=256,
-                 kernel_size=33, max_objects_to_blur=2,
-                  transform=None, indices=None, seed=None, gray_scale=False,
-                  percentage_of_deltas=0, augment_illumination=True, jitter_illumination=1,
-                  gamma_correction=False, gamma_factor=2.2):
-        """
-        Args:
-             sharp_image_files: Path to sharp images list file
-             kernel_image_files:  Path to kernels images list file
-             sharp_root_dir: sharp images names are relative to this directory
-             kernel_root_dir: kernel images names are relative to this directory
-             crop_size: blurred images are cropped to this size
-             transform: Optional transform to be appeared on a sample
-        """
+        self.resize_factor =  opt['resize_factor'] if opt['resize_factor'] is not None else 1
+        self.scales = opt['scales'] if opt['scales'] is not None else [1,2,3,4]
+        self.sigma = opt['sigma'] if opt['sigma'] else [0, 25]
+        self.sigma_min, self.sigma_max = self.sigma[0], self.sigma[1]
+        
+        self.dataroot = self.opt['dataroot']
+        self.coco_annotation_path = self.opt['coco_annotation_path']
+ 
+        self.kernel_root_dir = self.opt['kernels_root']
+        self.kernel_image_files = os.listdir(os.path.join(self.kernel_root_dir))
+        self.kernel_image_files = [file for file in self.kernel_image_files if file.endswith('.mat')]
+
+        #self.ids = []
+        self.count = 0
+        
         self.supercategories=['person', 'vehicle','animal']  #
-        self.coco = COCO(sharp_image_files)
+        self.coco = COCO(self.coco_annotation_path)
         self.labels_to_blur = self.coco.getCatIds(supNms=self.supercategories)
 
-        self.crop_size = crop_size
+        self.crop_size = self.opt['H_size']
         self.min_objetc_area = 0.05 * self.crop_size ** 2
         self.images_of_interest = []
         keys = self.coco.anns.keys()
@@ -46,34 +56,21 @@ class COCONonUniformBlurDataset(Dataset):
                 self.images_of_interest.append(self.coco.anns[key]['image_id'])
 
         self.images_of_interest = np.unique(np.array(self.images_of_interest))
-        if indices is not None:
-            self.images_of_interest = [self.images_of_interest[i] for i in indices]
-        self.sharp_root_dir = sharp_root_dir
 
         # only the labels of this list are blurred independently of the background
         # full list of ADE classes: https://github.com/CSAILVision/sceneparsing/tree/master/visualizationCode/color150
-        kernel_file = open(kernel_image_files, 'r')
         #self.n_kernels = 4  # number of kernels used to generate the data
         #self.kernel_image_files = kernel_file.readlines()[0:self.n_kernels] # se usan los primeros N kernels, está duro
-        self.kernel_image_files = kernel_file.readlines() # se usan todos los kernels
-        self.kernel_root_dir = kernel_root_dir
-        self.kernel_size = kernel_size
-        self.percentage_of_deltas = percentage_of_deltas
-        self.gray_scale = gray_scale
-
-        self.transform = transform
-        self.max_objects_to_blur = max_objects_to_blur
-        self.augment_illumination = augment_illumination
-        self.jitter_illumination = jitter_illumination
-        self.gamma_correction = gamma_correction
-        self.gamma_factor = gamma_factor
-
-        self.seed = seed
-
-    def __len__(self):
-        return len(self.images_of_interest)
-
-
+        
+        self.kernel_size = opt['kernel_size']
+        self.max_objects_to_blur = opt['max_objects_to_blur']
+        self.augment_illumination = opt['augment_illumination']
+        self.jitter_illumination = opt['jitter_illumination']
+        self.gamma_correction = opt['gamma_correction']
+        self.gamma_factor = opt['gamma_factor']
+        self.seed = opt['seed']
+   
+   
     def get_interesing_crop(self, sharp_image, img_id):
         '''
         :param sharp_image:
@@ -163,28 +160,20 @@ class COCONonUniformBlurDataset(Dataset):
         return sharp_image_crop, obj_masks
 
     def get_random_kernel(self):
-        random_number = np.random.rand()
-        if random_number < self.percentage_of_deltas:
-            kernel = np.zeros((self.kernel_size,self.kernel_size))
-            kernel[self.kernel_size//2, self.kernel_size//2] = 1
-        else:
-            # this is the blurry background
-            idx_kernel = np.random.randint(len(self.kernel_image_files))
-            kernel_name = self.kernel_image_files[idx_kernel][0:-1].split('/')
-            kernel = io.loadmat(os.path.join(self.kernel_root_dir, kernel_name[0], kernel_name[1]))['K']
+    
+        # this is the blurry background
+        idx_kernel = np.random.randint(len(self.kernel_image_files))
+        kernel_name = self.kernel_image_files[idx_kernel]
+        kernel = io.loadmat(os.path.join(self.kernel_root_dir, kernel_name))['K']
+        
         return kernel
 
 
     def generate_blurry_sharp_pair(self, sharp_image_crop, kernels, masks_to_send):
         K = self.kernel_size
 
-        if self.gray_scale:
-            sharp_image_crop = (255*rgb2gray(sharp_image_crop)).astype(np.uint8)
-            sharp_image_crop = sharp_image_crop[:,:,None]
-            blurry_image = np.zeros((sharp_image_crop.shape[0] - K + 1, sharp_image_crop.shape[1] - K + 1, 1),
-                                    dtype=np.float32)
-        else:
-            blurry_image = np.zeros((sharp_image_crop.shape[0]-K+1,sharp_image_crop.shape[1]-K+1,3),  dtype=np.float32)
+
+        blurry_image = np.zeros((sharp_image_crop.shape[0]-K+1,sharp_image_crop.shape[1]-K+1,3),  dtype=np.float32)
 
         if self.gamma_correction:
             sharp_image_crop = 255.0*( (sharp_image_crop/255.0)** self.gamma_factor)
@@ -220,12 +209,13 @@ class COCONonUniformBlurDataset(Dataset):
         while (min_size < self.crop_size + self.kernel_size) or (num_channels < 3):
             image_id = self.images_of_interest[idx]
             image_data = self.coco.loadImgs([image_id])[0]
-            sharp_image = np.array(Image.open(os.path.join(self.sharp_root_dir, image_data['file_name'])))
+            sharp_image = np.array(Image.open(os.path.join(self.dataroot, image_data['file_name'])))
             min_size = np.min([sharp_image.shape[0],sharp_image.shape[1]])
             num_channels = len(sharp_image.shape)
             idx = np.random.randint(len(self.images_of_interest))
 
-
+        H_path = image_data['file_name']
+        L_path = image_data['file_name']
         # An interesting crop is chosen
         K = self.kernel_size
 
@@ -283,17 +273,40 @@ class COCONonUniformBlurDataset(Dataset):
 
         #plt.imshow(blurry_image/255)
         #plt.show()
-        masks_to_send = self.transform(masks_to_send)
-        kernels_to_send = self.transform(kernels_to_send)
+        masks_to_send = torch.from_numpy(masks_to_send).permute((2,0,1))
+        kernels_to_send = torch.from_numpy(kernels_to_send).permute((2,0,1))
 
         try :
-            blurry_image = self.transform(blurry_image/255.)
+            blurry_image = torch.from_numpy(blurry_image/255.).permute((2,0,1))
             blurry_image = torch.clamp(blurry_image, 0.0, 1.0)
             if sharp_image_crop.dtype == np.uint8:
-                sharp_image_crop = self.transform(sharp_image_crop)
+                sharp_image_crop = torch.from_numpy(sharp_image_crop).permute((2,0,1))
             else:
-                sharp_image_crop = self.transform(sharp_image_crop.astype(np.float32)/255)
+                sharp_image_crop = torch.from_numpy(sharp_image_crop.astype(np.float32)/255).permute((2,0,1))
         except :
             print("Oops!  Error with image ...")
 
-        return {'sharp_image': sharp_image_crop, 'blurry_image': blurry_image, 'kernels': kernels_to_send, 'masks': masks_to_send}
+        #return {'sharp_image': sharp_image_crop, 'blurry_image': blurry_image, 'kernels': kernels_to_send, 'masks': masks_to_send}
+        
+        # --------------------------------
+        # 7) add noise
+        # --------------------------------
+        if random.randint(0, 8) == 1:
+                noise_level = 0 / 255.0
+        else:
+            noise_level = np.random.randint(0, self.sigma_max) / 255.0
+            noise = torch.randn(blurry_image.size()).mul_(noise_level).float()
+            blurry_image.add_(noise)
+
+        noise_level = torch.FloatTensor([noise_level]).view(1,1,1)
+        self.sf=1
+        return {'L': blurry_image, 'H': sharp_image_crop, 'kmap': masks_to_send, 'basis':  kernels_to_send, 'sigma': noise_level, 'sf': self.sf, 'L_path': L_path, 'H_path': H_path}
+
+
+  
+    def __len__(self):
+        if self.opt['phase'] == 'train':
+            return len(self.images_of_interest)
+        else:
+            return min(len(self.images_of_interest), 5)
+        

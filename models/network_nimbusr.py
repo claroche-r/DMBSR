@@ -143,18 +143,6 @@ def transpose_o_leary(x, kmap, basis):
         c += cross_correlate_tensor(hadamard(x, kmap[i]), basis[i])
     return c
 
-def transpose_pmpb(x, positions, intrinsics):
-    # Apply the transpose of PMPB model blurry = sum(K_i P_i K^{-1} x)
-    # x: input of shape (C,H,W)
-    # positions: input of shape (P,H,W)
-    # intrinsics: input of shape (P,H_k,W_k)
-    
-    assert len(kmap) == len(basis), str(len(kmap)) + ',' +  str(len(basis))
-    c = 0
-    for i in range(len(kmap)):
-        c += cross_correlate_tensor(hadamard(x, kmap[i]), basis[i])
-    return c
-
 
 def transpose_o_leary_batch(x, kmap, basis):
     # Apply the transpose of O'Leary convolution model blurry = sum(H_i^T U_i x)
