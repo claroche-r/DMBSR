@@ -59,7 +59,7 @@ class ModelBlindPMPB(ModelPlain):
         # else:
         #     self.estimated_positions = self.pos_network(self.L)
             
-        self.estimated_positions = self.pos_network(self.L)
+        self.estimated_positions = self.pos_network(self.L-0.5)
         
         #self.estimated_positions = self.estimated_positions.float()
         
@@ -177,7 +177,7 @@ class ModelBlindPMPB(ModelPlain):
         self.netG_forward()
         reblur_loss = torch.Tensor([0]).to(self.E.device); positions_loss=torch.Tensor([0]).to(self.E.device); kernels2D_loss=torch.Tensor([0]).to(self.E.device)
         if self.reblur_loss_weight>0: 
-            reblured_image, mask = masked_reblur_homographies(self.E, self.estimated_positions, self.intrinsics[0])
+            reblured_image, mask = masked_reblur_homographies(self.H, self.estimated_positions, self.intrinsics[0])
             reblur_loss = torch.nn.functional.mse_loss(reblured_image, self.L, reduction='none') 
             reblur_loss = self.reblur_loss_weight * reblur_loss.masked_select((mask > 0.9)).mean()       
         
