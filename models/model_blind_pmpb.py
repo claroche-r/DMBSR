@@ -64,6 +64,7 @@ class ModelBlindPMPB(ModelPlain):
     # feed (L, C) to netG and get E
     # ----------------------------------------
     def netG_forward(self):
+
         if self.mixed_precision:
             #with torch.cuda.amp.autocast():
                 #self.estimated_positions = self.pos_network(self.L-0.5)
