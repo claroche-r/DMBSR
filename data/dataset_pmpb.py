@@ -33,6 +33,7 @@ class Dataset(data.Dataset):
         self.blurry_files.sort()
         self.sharp_files.sort()
         self.positions_files.sort()
+        self.n_positions = opt['n_positions'] if opt['n_positions'] is not None else 25
         #self.ids = []
         self.count = 0
 
@@ -68,8 +69,23 @@ class Dataset(data.Dataset):
             img_L = util.imresize(img_L, self.resize_factor)
         
         P_path = os.path.join(self.dataroot, 'positions', self.positions_files[index])
-        camera_positions_np = np.loadtxt(P_path, delimiter=',')
-        camera_positions_np = camera_positions_np[:,3:]
+        loaded_positions_np = np.loadtxt(P_path, delimiter=',')
+        loaded_positions_np = loaded_positions_np[:,3:]  # only angles
+        
+        
+    
+        # interpolate to get self.n_positions
+        n_pos_in = len(loaded_positions_np)
+        original_indices = np.linspace(0,n_pos_in-1, n_pos_in)
+        interpolated_indices = np.linspace(0,n_pos_in-1, self.n_positions)
+        camera_positions_np = np.zeros((self.n_positions, 3))
+        for p in range(loaded_positions_np.shape[1]):
+            camera_positions_np[:,p]=np.interp(interpolated_indices, original_indices, loaded_positions_np[:,p])
+        
+        
+        
+        
+
         positions = torch.from_numpy(camera_positions_np).float()
         # ---------------------------
         # 1) scale factor, ensure each batch only involves one scale factor

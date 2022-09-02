@@ -19,11 +19,6 @@ from utils.restoration import RL_restore, combined_RL_restore
 
 
 def load_nimbusr_net():
-<<<<<<< HEAD
-    
-=======
-
->>>>>>> 28c6287c4b852cc711a49e8f259d6a1d931b164c
     opt_net = { "n_iter": 8
         , "h_nc": 64
         , "in_nc": 4

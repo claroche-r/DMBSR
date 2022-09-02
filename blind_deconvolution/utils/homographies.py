@@ -85,7 +85,35 @@ class SymmetricLoss(torch.nn.Module):
                 symmetric_loss += torch.sum(torch.abs(avg_loss) + torch.abs(diff_loss) )
         symmetric_loss += torch.sum(torch.abs(found_pos[middle_index-1] - gt_pos[middle_index-1]))
         return symmetric_loss
-                             
+
+class RotationsLoss(torch.nn.Module):
+    def __init__(self, norm_type=2):
+        super(RotationsLoss, self).__init__()
+        self.norm_type = norm_type
+        
+    def forward(self,found_pos, gt_pos):
+        '''
+        found_pos: 1xNx3
+        gt_pos: 1xNx3
+        '''
+        N_pose = found_pos.shape[1]
+        rotations_loss = torch.Tensor([0.]).to(found_pos.device)
+        
+        # gt_rot - Nx3x3 
+        gt_rot = kornia.geometry.angle_axis_to_rotation_matrix(gt_pos[0,:, :])
+        # found_rot - Nx3x3 
+        found_rot = kornia.geometry.angle_axis_to_rotation_matrix(found_pos[0,:,:])
+        
+        rotations_loss = torch.sum(torch.norm(gt_rot - found_rot, p = self.norm_type, dim=1))
+        
+        #for n in range(N_pose):
+        #    col0_diff = torch.norm(gt_rot[n,:,0] - found_rot[n,:,0], self.norm_type)
+        #    col1_diff = torch.norm(gt_rot[n,:,1] - found_rot[n,:,1], self.norm_type)
+        #    col2_diff = torch.norm(gt_rot[n,:,2] - found_rot[n,:,2], self.norm_type)
+        #    rotations_loss += col0_diff + col1_diff + col2_diff
+        
+        return rotations_loss 
+                                 
 class Kernels2DLoss(torch.nn.Module):
 
     def __init__(self, loss_type='L2', padding=0):
@@ -117,7 +145,7 @@ class Kernels2DLoss(torch.nn.Module):
             loc2D_gt = proj_gt[0,0,:2, :] / (proj_gt[0,0, 2, :] + self.eps)  # 2x(MxN)
 
             if self.loss_type == 'L2':
-                kernel_loss += torch.mean((loc2D_found - loc2D_gt)**2)
+                kernel_loss.add_(torch.mean((loc2D_found - loc2D_gt)**2))
             elif self.loss_type == 'L1':
                 kernel_loss += torch.sum(torch.abs(loc2D_found - loc2D_gt))
             elif self.loss_type == 'maxL2':
@@ -129,7 +157,11 @@ class Kernels2DLoss(torch.nn.Module):
                 kernel_loss_n = torch.sum(torch.abs(loc2D_found - loc2D_gt), dim=0)
                 kernel_loss = torch.max(kernel_loss, kernel_loss_n)
                 kernel_loss = torch.mean(kernel_loss)
+                
+            del found_homo, gt_homo, found_homo_inv, gt_homo_inv, proj_found, loc2D_found, proj_gt, loc2D_gt
 
+        del xx, yy, loc
+        
         return kernel_loss
 
 
@@ -146,6 +178,9 @@ def masked_reblur_homographies(sharp_image, camera_positions, intrinsics, forwar
     mask = torch.zeros_like(sharp_image).cuda(sharp_image.device)
     n_positions = camera_positions.shape[1]
     warper = kornia.geometry.HomographyWarper(H, W, padding_mode='reflection')
+    ones = torch.ones_like(sharp_image)
+    mask_n = torch.empty_like(mask)
+    img_src_to_dst_n = torch.empty_like(sharp_image)
     for n in range(n_positions):
         if forward:
             dst_homo_src_n = compute_homography_from_position(camera_positions[0, n, :], intrinsics)
@@ -163,9 +198,12 @@ def masked_reblur_homographies(sharp_image, camera_positions, intrinsics, forwar
         # print('iter %d:' %i, 'dst_homo_src: ', dst_homo_src)
         # print('src_homo_dst', src_homo_dst)
         img_src_to_dst_n = warper(sharp_image, src_homo_dst_n)
-        reblured_image += img_src_to_dst_n / n_positions
-        mask += warper(torch.ones_like(sharp_image), src_homo_dst_n) / n_positions
-
+        reblured_image.add_(img_src_to_dst_n / n_positions)
+        mask_n = warper(ones, src_homo_dst_n)
+        mask.add_( mask_n/ n_positions)
+    
+    del mask_n, ones, warper, img_src_to_dst_n 
+    
     return reblured_image, mask
 
 def reblur_homographies(sharp_image, camera_positions, intrinsics, forward = True):
@@ -202,7 +240,7 @@ def reblur_homographies(sharp_image, camera_positions, intrinsics, forward = Tru
 
 def rigid_transform(RX=0., RY=0., RZ=0., TX=0., TY=0., depth=1):
     '''
-    Implementation of Rigid Transform with Rodrigues formula por rotation:
+    Implementation of Rigid Transform with Rodrigues formula for rotations:
     https://en.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensions
     https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
 
@@ -456,15 +494,20 @@ def mostrar_kernels(K, img_shape, padding=65, window=65, output_name='kernels.pn
         #col_kernel_img = col_kernel_img[cy - window // 2:cy + window // 2, cx - window // 2:cx + window // 2].copy()
 
 
-        mink = kernel_img.min()
-        maxk = kernel_img.max()
-        output_img[cy - window // 2:cy + window // 2, cx - window // 2:cx + window // 2] = (kernel_img - mink) / (
-                    maxk - mink)
-        output_img[cy - window // 2:cy + window // 2, cx - window // 2] = 1
-        output_img[cy - window // 2:cy + window // 2, cx + window // 2] = 1
-        output_img[cy - window // 2, cx - window // 2:cx + window // 2] = 1
-        output_img[cy + window // 2, cx - window // 2:cx + window // 2] = 1
-
+        #mink = kernel_img.min()
+        #maxk = kernel_img.max()
+        #output_img[cy - window // 2:cy + window // 2, cx - window // 2:cx + window // 2] = (kernel_img - mink) / (
+        #            maxk - mink)
+        
+        output_img[cy - window // 2:cy + window // 2, cx - window // 2:cx + window // 2] = kernel_img
+        #print(kernel_img.sum())
+        
+        #output_img[cy - window // 2:cy + window // 2, cx - window // 2] = 1
+        #output_img[cy - window // 2:cy + window // 2, cx + window // 2] = 1
+        #output_img[cy - window // 2, cx - window // 2:cx + window // 2] = 1
+        #output_img[cy + window // 2, cx - window // 2:cx + window // 2] = 1
+    
+    output_img = (output_img - output_img.min())/(output_img.max()-output_img.min())
     if padding>0:
         output_img = output_img[padding:-padding, padding:-padding]
     imsave(output_name, output_img)
