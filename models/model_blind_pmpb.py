@@ -196,7 +196,7 @@ class ModelBlindPMPB(ModelPlain):
             reblur_loss = torch.nn.functional.mse_loss(reblured_image, self.L, reduction='none') 
             reblur_loss = self.reblur_loss_weight * reblur_loss.masked_select((mask > 0.9)).mean()       
         
-        del reblured_image, mask 
+            del reblured_image, mask 
         
         if self.positions_loss_weight:
             positions_loss = self.positions_loss_weight * torch.min(torch.nn.functional.mse_loss( self.positions, self.estimated_positions ), 
