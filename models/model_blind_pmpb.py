@@ -80,9 +80,11 @@ class ModelBlindPMPB(ModelPlain):
         
         if self.opt_train['G_lossfn_weight']>0:
             self.E = self.netG(self.L, self.estimated_positions, self.intrinsics, self.sf, self.sigma)
+            #self.E = self.netG(self.L, self.positions, self.intrinsics, self.sf, self.sigma)
         else:
             with torch.no_grad():
                 self.E = self.netG(self.L, self.estimated_positions, self.intrinsics, self.sf, self.sigma)
+                #self.E = self.netG(self.L, self.positions, self.intrinsics, self.sf, self.sigma)
 
     def load(self):
         load_path_G = self.opt['path']['pretrained_netG']
@@ -127,7 +129,7 @@ class ModelBlindPMPB(ModelPlain):
                      
         self.netG_forward()
             
-        reblured_image, mask = masked_reblur_homographies(self.E, self.estimated_positions, self.intrinsics[0])
+        reblured_image, mask = masked_reblur_homographies(self.H, self.estimated_positions, self.intrinsics[0])
         
         _, C, H, W = self.H.shape
         

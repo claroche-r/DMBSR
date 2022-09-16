@@ -1,6 +1,6 @@
 import os
 
-folder= '/media/carbajal/OS/data/datasets/COCO_homographies_small_gf1_val'  #'/clusteruy/home/carbajal/data/COCO_homographies_small_gf1' #'/home/guillermo/github/camera_shake/data/COCO_homographies_small_gf1'
+folder=  '/home/guillermo/github/camera_shake/data/COCO_homographies_small_gf1' #'/media/carbajal/OS/data/datasets/COCO_homographies_small_gf1_val' #
 blurry_folder=os.path.join(folder,'blurry')
 blurry_files = os.listdir(blurry_folder)
 blurry_files.sort()

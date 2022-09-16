@@ -51,7 +51,7 @@ def load_nimbusr_net():
 
           , "coco_annotation_path": "datasets/COCO/instances_val2014.json"}
 
-    path_pretrained = r'../model_zoo/NIMBUSR.pth'
+    path_pretrained = args.nimbusr_model #r'../model_zoo/NIMBUSR.pth'
 
     netG = net(n_iter=opt_net['n_iter'],
                    h_nc=opt_net['h_nc'],
@@ -89,6 +89,7 @@ parser.add_argument('--smoothing', action='store_true', default=True, help='appl
 parser.add_argument('--erosion', action='store_true', default=True, help='apply erosion to the non-saturated region')
 parser.add_argument('--dilation', action='store_true', default=False, help='apply dilation to the saturated region using the kernel as structural element')
 parser.add_argument('--restoration_method','-rm', type=str, default='RL')
+parser.add_argument('--nimbusr_model','-nm', type=str, default=r'../model_zoo/NIMBUSR.pth')
 
 
 

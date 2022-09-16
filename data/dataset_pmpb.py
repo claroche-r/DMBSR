@@ -34,6 +34,7 @@ class Dataset(data.Dataset):
         self.sharp_files.sort()
         self.positions_files.sort()
         self.n_positions = opt['n_positions'] if opt['n_positions'] is not None else 25
+        self.crop_size =  opt['H_size'] if opt['H_size'] is not None else -1
         #self.ids = []
         self.count = 0
 
@@ -65,6 +66,7 @@ class Dataset(data.Dataset):
         img_L = util.single2tensor3(img_L)
         
         if self.resize_factor != 1:
+            #self.resize_factor = 0.5*np.random.rand() + 0.5   
             img_H = util.imresize(img_H, self.resize_factor)
             img_L = util.imresize(img_L, self.resize_factor)
         
@@ -99,9 +101,21 @@ class Dataset(data.Dataset):
         # ------------------------------------
         # 5) Downsampling
         # ------------------------------------
-        C, H, W = img_H.shape
+        C, H, W = img_H.shape   
         intrinsics = compute_intrinsics(W,H)
         #print('image size = (%d, %d)' % (W,H))
+        #print('positions range = (%.03f, %.03f)' % (positions.min(),positions.max()))
+        
+        if self.crop_size > 0:
+            size = min(self.crop_size, H, W)
+            cy = H//2 ; cx=W//2
+            img_H_crop = img_H[:, cy-size//2:cy+size//2, cx-size//2:cx+size//2]
+            img_L_crop = img_L[:,  cy-size//2:cy+size//2, cx-size//2:cx+size//2]
+            intrinsics_crop = intrinsics.clone()
+            intrinsics_crop[0,2] = size/2
+            intrinsics_crop[1,2] = size/2 
+            #print('Intrinsics crop: ', intrinsics_crop)
+
 
 
 
@@ -116,8 +130,15 @@ class Dataset(data.Dataset):
             img_L.add_(noise)
 
         noise_level = torch.FloatTensor([noise_level]).view(1,1,1)
-        return {'L': img_L, 'H': img_H, 'positions': torch.FloatTensor(positions), 'intrinsics': torch.FloatTensor(intrinsics),
+        
+        if self.crop_size>0:
+            output = {'L': img_L_crop, 'H': img_H_crop, 'positions': torch.FloatTensor(positions), 'intrinsics': torch.FloatTensor(intrinsics_crop),
                 'sigma': noise_level, 'sf': self.sf, 'L_path': L_path, 'H_path': H_path}
+        else:
+            output = {'L': img_L, 'H': img_H, 'positions': torch.FloatTensor(positions), 'intrinsics': torch.FloatTensor(intrinsics),
+                'sigma': noise_level, 'sf': self.sf, 'L_path': L_path, 'H_path': H_path}
+        
+        return output
 
     def __len__(self):
         if self.opt['phase'] == 'train':
