@@ -1,5 +1,7 @@
 # Deep Model-Based Super-Resolution with Non-uniform Blur
 
+<a href="https://arxiv.org/abs/2204.10109" target="_blank" rel="noopener"><img src="logo/arxiv.png" height=30 alt="Download"></a>  
+
 This repository implements the code of *Deep Model-Based Super-Resolution with Non-uniform Blur*
 
 # Train
@@ -57,3 +59,14 @@ LR | DMPHN           |  RealBlur | MPRNet | Ours
 
 # Acknowledgement
 The codes use [KAIR](https://github.com/cszn/KAIR) as base. Please also follow their licenses. I would like to thank them for the amazing repository.
+
+# Citation
+If you use our work, please cite us with the following:
+```
+@InProceedings{laroche2023dmbsr,
+  title = {Deep Model-Based Super-Resolution with Non-Uniform Blur},
+  author = {Laroche, Charles and Almansa, Andrés and Tassano, Matias},
+  booktitle = {IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)}
+  year = {2023}
+}
+```
