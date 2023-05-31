@@ -294,9 +294,9 @@ class HyPaNet(nn.Module):
 """
 
 
-class NIMBUSR(nn.Module):
+class DMBSR(nn.Module):
     def __init__(self, n_iter=8, h_nc=64, in_nc=4, out_nc=3, nc=[64, 128, 256, 512], nb=2, act_mode='R', downsample_mode='strideconv', upsample_mode='convtranspose'):
-        super(NIMBUSR, self).__init__()
+        super(DMBSR, self).__init__()
 
         self.d = DataNet()
         self.p = ResUNet(in_nc=in_nc, out_nc=out_nc, nc=nc, nb=nb, act_mode=act_mode, downsample_mode=downsample_mode, upsample_mode=upsample_mode)

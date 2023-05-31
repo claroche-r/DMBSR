@@ -17,9 +17,8 @@ def define_G(opt):
     opt_net = opt['netG']
     net_type = opt_net['net_type']
 
-    #elif net_type == 'nimbusr':  # USRNet
-    if net_type == 'nimbusr': 
-        from models.network_nimbusr import NIMBUSR as net
+    if net_type == 'dmbsr': 
+        from models.network_dmbsr import DMBSR as net
         netG = net(n_iter=opt_net['n_iter'],
                    h_nc=opt_net['h_nc'],
                    in_nc=opt_net['in_nc'],
