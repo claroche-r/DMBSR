@@ -1,1 +1,6 @@
+# Jupyter files
+.ipynb_checkpoints
+
+# Large files
 kernels/custom_blur_centered.mat
+
