@@ -16,7 +16,7 @@ python main_train.py -opt options/train_nimbusr.json
 
 Pre-trained model is available at: *model_zoo/DMBSR.pth*
 
-Our blur kernels are available for download [here](https://drive.google.com/file/d/1fDtSwItCCqob6ZJ_zvVfvQJ8U1q7dV7D/view?usp=share_link). They need to be added in the folder |-*kernels*
+Our blur kernels are available for download [here](https://drive.google.com/file/d/1o1ruvDSbR9R12DzjA-2KIps7cqy4544v/view?usp=share_link). They need to be added in the folder |-*kernels*
 
 See *test_model.ipynb* to test the model on COCO dataset.
 
